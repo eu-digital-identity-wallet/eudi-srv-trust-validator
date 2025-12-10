@@ -23,26 +23,10 @@ import kotlinx.serialization.UseSerializers
 import java.net.URL
 import java.security.KeyStore
 
-internal enum class ProviderType {
-    PIDProvider,
-    QEAAProvider,
-    PubEAAProvider,
-    WalletProvider,
-    ;
-
-    fun toDomain(): ServiceType =
-        when (this) {
-            PIDProvider -> ServiceType.PIDProvider
-            QEAAProvider -> ServiceType.QEAAProvider
-            PubEAAProvider -> ServiceType.PubEAAProvider
-            WalletProvider -> ServiceType.WalletProvider
-        }
-}
-
 /**
- * Verifier configuration options
+ * Validator configuration options
  */
-data class VerifierConfig(
+data class ValidatorConfig(
     val trustSourcesConfig: Map<ServiceType, TrustSourceConfig>,
 )
 

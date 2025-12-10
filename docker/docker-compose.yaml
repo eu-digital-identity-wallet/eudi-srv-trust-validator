@@ -1,16 +1,16 @@
 version: "3.8"
 
 services:
-  verifier:
+  trust-validator:
     container_name: eudi-srv-trust-validator
     image: ghcr.io/eu-digital-identity-wallet/eudi-srv-trust-validator:edge
     ports:
       - "8080:8080"
     environment:
-      VERIFIER_TRUSTSOURCES_0_PROVIDERTYPE: "PIDProvider"
-      VERIFIER_TRUSTSOURCES_0_LOTL_LOCATION: "https://trustedlist.serviceproviders.eudiw.dev/LOTL/01.xml"
-      VERIFIER_TRUSTSOURCES_0_LOTL_SERVICETYPEFILTER: "PIDProvider"
-      VERIFIER_TRUSTSOURCES_0_LOTL_REFRESHINTERVAL: "0 0 * * * *"
-      VERIFIER_TRUSTSOURCES_0_LOTL_KEYSTORE_PATH: "classpath:lotl.jks"
-      VERIFIER_TRUSTSOURCES_0_LOTL_KEYSTORE_TYPE: "JKS"
-      VERIFIER_TRUSTSOURCES_0_LOTL_KEYSTORE_PASSWORD: ""
+      TRUSTSOURCES_0_PROVIDERTYPE: "PIDProvider"
+      TRUSTSOURCES_0_LOTL_LOCATION: "https://trustedlist.serviceproviders.eudiw.dev/LOTL/01.xml"
+      TRUSTSOURCES_0_LOTL_SERVICETYPEFILTER: "PIDProvider"
+      TRUSTSOURCES_0_LOTL_REFRESHINTERVAL: "0 0 * * * *"
+      TRUSTSOURCES_0_LOTL_KEYSTORE_PATH: "classpath:lotl.jks"
+      TRUSTSOURCES_0_LOTL_KEYSTORE_TYPE: "JKS"
+      TRUSTSOURCES_0_LOTL_KEYSTORE_PASSWORD: ""

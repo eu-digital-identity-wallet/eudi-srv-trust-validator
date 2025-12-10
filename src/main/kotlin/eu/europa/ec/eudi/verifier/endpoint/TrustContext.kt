@@ -135,19 +135,19 @@ internal fun beans(clock: Clock) = BeanRegistrarDsl {
     }
 }
 
-private fun verifierConfig(environment: Environment, clock: Clock): VerifierConfig {
-    return VerifierConfig(
+private fun verifierConfig(environment: Environment, clock: Clock): ValidatorConfig {
+    return ValidatorConfig(
         trustSourcesConfig = environment.trustSources(),
     )
 }
 
 /**
  * Parses the trust sources configuration from the environment.
- * Handles array-like property names: verifier.trustSources[0].pattern, etc.
+ * Handles array-like property names: trustSources[0].pattern, etc.
  */
 private fun Environment.trustSources(): Map<ServiceType, TrustSourceConfig> {
     val trustSourcesConfigMap = mutableMapOf<ServiceType, TrustSourceConfig>()
-    val prefix = "verifier.trustSources"
+    val prefix = "trustSources"
 
     var index = 0
     while (true) {

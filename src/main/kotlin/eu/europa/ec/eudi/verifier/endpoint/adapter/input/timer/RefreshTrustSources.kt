@@ -21,7 +21,7 @@ import eu.europa.ec.eudi.verifier.endpoint.domain.KeyStoreConfig
 import eu.europa.ec.eudi.verifier.endpoint.domain.ServiceType
 import eu.europa.ec.eudi.verifier.endpoint.domain.TrustSourceConfig
 import eu.europa.ec.eudi.verifier.endpoint.domain.TrustedListConfig
-import eu.europa.ec.eudi.verifier.endpoint.domain.VerifierConfig
+import eu.europa.ec.eudi.verifier.endpoint.domain.ValidatorConfig
 import eu.europa.ec.eudi.verifier.endpoint.port.out.lotl.FetchLOTLCertificates
 import kotlinx.coroutines.*
 import org.springframework.beans.factory.InitializingBean
@@ -35,7 +35,7 @@ import java.security.cert.X509Certificate
 class RefreshTrustSources(
     private val fetchLOTLCertificates: FetchLOTLCertificates,
     private var trustSources: TrustSources,
-    private val verifierConfig: VerifierConfig,
+    private val validatorConfig: ValidatorConfig,
 ) : InitializingBean, SchedulingConfigurer {
     private val ioDispatcher = Dispatchers.IO.limitedParallelism(2)
 
@@ -45,7 +45,7 @@ class RefreshTrustSources(
 
     override fun configureTasks(taskRegistrar: ScheduledTaskRegistrar) {
         // Configure LOTL refresh tasks for each trust source that has LOTL configuration
-        verifierConfig.trustSourcesConfig?.forEach { (regex, trustSourceConfig) ->
+        validatorConfig.trustSourcesConfig?.forEach { (regex, trustSourceConfig) ->
             trustSourceConfig.leftOrNull()?.let {
                 taskRegistrar.addCronTask(
                     CronTask(
@@ -63,7 +63,7 @@ class RefreshTrustSources(
 
     private suspend fun updateLOTLs() =
         withContext(ioDispatcher + CoroutineName("initializing LOTL(s)")) {
-            verifierConfig.trustSourcesConfig
+            validatorConfig.trustSourcesConfig
                 .map { (regex, trustSourceConfig) ->
                     launch { updateLotl(regex, trustSourceConfig) }
                 }.joinAll()
