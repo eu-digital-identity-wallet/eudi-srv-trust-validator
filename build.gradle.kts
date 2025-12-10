@@ -52,7 +52,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
-    testImplementation("org.bouncycastle:bcpkix-jdk18on:1.82")
+    testImplementation("org.bouncycastle:bcpkix-jdk18on:1.83")
 }
 
 java {
