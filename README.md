@@ -31,6 +31,7 @@ Service type mapping
 - QEAAProvider  
 - PubEAAProvider  
 - WalletProvider  
+- EAAProvider  
 
 ## Disclaimer
 
@@ -75,7 +76,7 @@ docker-compose down
 
 - _Method_: POST
 - _URL_: http://localhost:8080/trust
-- _Actor_: [Trust](src/main/kotlin/eu/europa/ec/eudi/verifier/endpoint/adapter/input/web/TrustApi.kt)
+- _Actor_: [Trust](src/main/kotlin/eu/europa/ec/eudi/trustvalidator/adapter/input/web/TrustApi.kt)
 
 An endpoint to validates an incoming x5c chain against configured trust sources (List of Trusted Lists and/or keystores). Payload of this request is a json object with the following acceptable attributes:
 - `x5c`: X509 certificates in Base64 (DER format).
@@ -141,7 +142,7 @@ The trust sources are configured using the environment variable `TRUSTSOURCES` a
 Variable: `TRUSTSOURCES_0_PROVIDERTYPE`  
 Description: The provider type of the trust source.  
 Default value: `PIDProvider`  
-Example: `PIDProvider`, `QEAAProvider`, `PubEAAProvider`, `WalletProvider`  
+Example: `PIDProvider`, `QEAAProvider`, `PubEAAProvider`, `WalletProvider`, `EAAProvider`  
 
 Variable: `TRUSTSOURCES_0_LOTL_LOCATION`  
 Description: If present, the URL of the List of Trusted Lists from which to load the X509 Certificates for this trust source  

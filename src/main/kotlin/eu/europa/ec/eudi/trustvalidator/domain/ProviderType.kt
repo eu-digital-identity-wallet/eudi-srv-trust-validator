@@ -15,11 +15,15 @@
  */
 package eu.europa.ec.eudi.trustvalidator.domain
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 internal enum class ProviderType {
     PIDProvider,
     QEAAProvider,
     PubEAAProvider,
     WalletProvider,
+    EAAProvider,
     ;
 
     fun toDomain(): ServiceType =
@@ -28,5 +32,6 @@ internal enum class ProviderType {
             QEAAProvider -> ServiceType.QEAAProvider
             PubEAAProvider -> ServiceType.PubEAAProvider
             WalletProvider -> ServiceType.WalletProvider
+            EAAProvider -> ServiceType.EAAProvider
         }
 }
