@@ -37,6 +37,7 @@ enum class ServiceType(val value: String) {
     QEAAProvider("http://uri.etsi.org/TrstSvc/Svctype/EAA/Q"),
     PubEAAProvider("http://uri.etsi.org/TrstSvc/Svctype/EAA/Pub-EAA"),
     WalletProvider("http://uri.etsi.org/TrstSvc/Svctype/Provider/Wallet"), // TODO TBD
+    EAAProvider("http://uri.etsi.org/TrstSvc/Svctype/EAA"),
 }
 
 data class TrustedListConfig(
