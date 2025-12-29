@@ -1,16 +1,16 @@
 [versions]
 coroutines = "1.10.2"
-kotlin = "2.2.21"
-springboot = "4.0.0"
-spotless = "7.0.2"
+kotlin = "2.3.0"
+springboot = "4.0.1"
+spotless = "8.1.0"
 java = "17"
 ktlintVersion = "0.50.0"
-arrow = "2.0.1"
-dependencycheck = "12.1.1"
-swaggerUi = "5.20.1"
-kover = "0.9.1"
-uri = "0.0.19"
-dss = "6.2"
+arrow = "2.2.1.1"
+dependencycheck = "12.1.9"
+swaggerUi = "5.31.0"
+kover = "0.9.4"
+uri = "0.0.21"
+dss = "6.3"
 
 [libraries]
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
