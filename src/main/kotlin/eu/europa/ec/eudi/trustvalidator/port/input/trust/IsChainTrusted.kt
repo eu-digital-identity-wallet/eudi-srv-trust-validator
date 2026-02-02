@@ -16,7 +16,9 @@
 package eu.europa.ec.eudi.trustvalidator.port.input.trust
 
 import arrow.core.Either
+import arrow.core.Either.Companion.catch
 import arrow.core.NonEmptyList
+import arrow.core.raise.catch
 import arrow.core.raise.either
 import arrow.core.raise.ensureNotNull
 import eu.europa.ec.eudi.etsi1196x2.consultation.CertificationChainValidation
@@ -68,12 +70,16 @@ fun interface IsChainTrusted {
 }
 
 fun IsChainTrusted(isChainTrustedForContext: IsChainTrustedForContext<List<X509Certificate>, TrustAnchor>): IsChainTrusted =
-    IsChainTrusted {
+    IsChainTrusted { query ->
         either {
-            val verificationContext = it.verificationContext().bind()
-            val result = ensureNotNull(isChainTrustedForContext(it.chain, verificationContext)) {
+            val verificationContext = query.verificationContext().bind()
+            val result = catch({ isChainTrustedForContext(query.chain, verificationContext) }) { error ->
+                CertificationChainValidation.NotTrusted(error)
+            }
+            ensureNotNull(result) {
                 ErrorResponseTO("No configuration found for VerificationContext $verificationContext")
             }
+
             when (result) {
                 is CertificationChainValidation.Trusted -> TrustResponseTO(true)
                 is CertificationChainValidation.NotTrusted -> TrustResponseTO(false)
