@@ -23,8 +23,6 @@ import eu.europa.ec.eudi.etsi1196x2.consultation.dss.usingLoTL
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
-import eu.europa.ec.eudi.trustvalidator.domain.Clock
-import eu.europa.ec.eudi.trustvalidator.domain.Clock.Companion.asKotlinClock
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import eu.europa.esig.dss.spi.x509.KeyStoreCertificateSource
 import eu.europa.esig.dss.tsl.function.GrantedOrRecognizedAtNationalLevelTrustAnchorPeriodPredicate
@@ -48,6 +46,7 @@ import java.nio.file.Path
 import java.security.KeyStore
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
@@ -67,7 +66,7 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
                 fileCacheExpiration = 24.hours,
                 cacheDirectory = config.dss.cacheLocation,
             ),
-            clock = bean<Clock>().asKotlinClock(),
+            clock = bean<Clock>(),
             ttl = 10.minutes,
         )
 
