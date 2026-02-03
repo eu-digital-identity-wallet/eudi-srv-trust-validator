@@ -15,12 +15,14 @@
  */
 package eu.europa.ec.eudi.trustvalidator.adapter.input.web
 
+import eu.europa.ec.eudi.trustvalidator.port.input.trust.ErrorResponseTO
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.TrustQueryTO
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.web.reactive.function.server.*
-import org.springframework.web.reactive.function.server.ServerResponse.badRequest
 import org.springframework.web.reactive.function.server.ServerResponse.ok
+import org.springframework.web.reactive.function.server.ServerResponse.status
 
 internal class TrustApi(
     private val isChainTrusted: IsChainTrustedUseCase,
@@ -36,7 +38,13 @@ internal class TrustApi(
     private suspend fun trustQuery(request: ServerRequest): ServerResponse {
         val trustQuery = request.awaitBody<TrustQueryTO>()
         return isChainTrusted(trustQuery).fold(
-            { badRequest().bodyValueAndAwait(it) },
+            {
+                val status = when (it) {
+                    is ErrorResponseTO.ClientErrorResponseTO -> HttpStatus.BAD_REQUEST
+                    is ErrorResponseTO.ServerErrorResponseTO -> HttpStatus.INTERNAL_SERVER_ERROR
+                }
+                status(status).bodyValueAndAwait(it)
+            },
             { ok().bodyValueAndAwait(it) },
         )
     }

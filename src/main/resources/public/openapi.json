@@ -68,7 +68,19 @@
             }
           },
           "500": {
-            "description": "Server error"
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "ErrorResponseNoConfigurationForVerificationContext": {
+                    "$ref": "#/components/examples/ErrorResponseNoConfigurationForVerificationContext"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -198,6 +210,12 @@
         "description": "Missing useCase",
         "value": {
           "description": "Missing useCase"
+        }
+      },
+      "ErrorResponseNoConfigurationForVerificationContext": {
+        "description": "No configuration found for VerificationContext",
+        "value": {
+          "description": "No configuration found for VerificationContext"
         }
       }
     }

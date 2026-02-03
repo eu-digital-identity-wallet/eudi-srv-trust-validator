@@ -70,8 +70,19 @@ data class TrustResponseTO(
     }
 }
 
-@Serializable
-data class ErrorResponseTO(val description: String)
+sealed interface ErrorResponseTO {
+    val description: String
+
+    @Serializable
+    data class ClientErrorResponseTO(
+        @Required override val description: String,
+    ) : ErrorResponseTO
+
+    @Serializable
+    data class ServerErrorResponseTO(
+        @Required override val description: String,
+    ) : ErrorResponseTO
+}
 
 class IsChainTrustedUseCase(
     private val isChainTrustedForContext: IsChainTrustedForContext<List<X509Certificate>, TrustAnchor>,
@@ -83,13 +94,13 @@ class IsChainTrustedUseCase(
                 CertificationChainValidation.NotTrusted(error)
             }
             ensureNotNull(result) {
-                ErrorResponseTO("No configuration found for VerificationContext $verificationContext")
+                ErrorResponseTO.ServerErrorResponseTO("No configuration found for VerificationContext $verificationContext")
             }
 
             when (result) {
                 is CertificationChainValidation.Trusted -> {
                     val trustAnchorCertificate = ensureNotNull(result.trustAnchor.trustedCert) {
-                        ErrorResponseTO("TrustAnchor was not specified as a X509 Certificate")
+                        ErrorResponseTO.ServerErrorResponseTO("TrustAnchor was not specified as a X509 Certificate")
                     }
                     TrustResponseTO.trusted(trustAnchorCertificate)
                 }
@@ -98,9 +109,9 @@ class IsChainTrustedUseCase(
         }
 }
 
-private fun TrustQueryTO.verificationContext(): Either<ErrorResponseTO, VerificationContext> =
+private fun TrustQueryTO.verificationContext(): Either<ErrorResponseTO.ClientErrorResponseTO, VerificationContext> =
     either {
-        fun useCase(): String = ensureNotNull(useCase) { ErrorResponseTO("Missing useCase") }
+        fun useCase(): String = ensureNotNull(useCase) { ErrorResponseTO.ClientErrorResponseTO("Missing useCase") }
         when (verificationContext) {
             VerificationContextTO.WalletInstanceAttestation -> VerificationContext.WalletInstanceAttestation
             VerificationContextTO.WalletUnitAttestation -> VerificationContext.WalletUnitAttestation
