@@ -24,6 +24,7 @@ import eu.europa.ec.eudi.etsi1196x2.consultation.CertificationChainValidation
 import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContext
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
 import eu.europa.ec.eudi.trustvalidator.adapter.out.serialization.X509CertificateChainSerializer
+import eu.europa.ec.eudi.trustvalidator.adapter.out.serialization.X509CertificateSerializer
 import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
 import java.security.cert.TrustAnchor
@@ -59,7 +60,15 @@ data class TrustQueryTO(
 )
 
 @Serializable
-data class TrustResponseTO(val trusted: Boolean)
+data class TrustResponseTO(
+    @Required val trusted: Boolean,
+    @Serializable(with = X509CertificateSerializer::class) val trustAnchor: X509Certificate?,
+) {
+    companion object {
+        fun trusted(trustAnchor: X509Certificate) = TrustResponseTO(true, trustAnchor)
+        fun notTrusted() = TrustResponseTO(false, null)
+    }
+}
 
 @Serializable
 data class ErrorResponseTO(val description: String)
@@ -78,8 +87,13 @@ class IsChainTrustedUseCase(
             }
 
             when (result) {
-                is CertificationChainValidation.Trusted -> TrustResponseTO(true)
-                is CertificationChainValidation.NotTrusted -> TrustResponseTO(false)
+                is CertificationChainValidation.Trusted -> {
+                    val trustAnchorCertificate = ensureNotNull(result.trustAnchor.trustedCert) {
+                        ErrorResponseTO("TrustAnchor was not specified as a X509 Certificate")
+                    }
+                    TrustResponseTO.trusted(trustAnchorCertificate)
+                }
+                is CertificationChainValidation.NotTrusted -> TrustResponseTO.notTrusted()
             }
         }
 }
