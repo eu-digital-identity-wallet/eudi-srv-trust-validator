@@ -17,25 +17,17 @@ the [EUDI Wallet Reference Implementation project description](https://github.co
 
 ## Overview
 
-Simple Kotlin/Spring Boot WebFlux service to check whether an X.509 certificate chain (x5c) is trusted for a given service type.
+Trust Validator Service is a web application used to check whether an X.509 certificate chain is trusted or not. The implementation is
+based on [eudi-lib-kmp-etsi-1196x2](https://github.com/eu-digital-identity-wallet/eudi-lib-kmp-etsi-1196x2).
 
-What it does
-- Exposes a single endpoint: /trust
-- Validates an incoming x5c chain against configured trust sources (List of Trusted Lists and/or keystores)
+Currently, the following sources for Trust Anchors are supported:
 
-Notes
-- x5c items are Base64 DER format.
-
-Service type mapping
-- PIDProvider  
-- QEAAProvider  
-- PubEAAProvider  
-- WalletProvider  
-- EAAProvider  
+1. Lists of Trusted Lists (LoTLs), based on [ETSI TS 119 612](https://www.etsi.org/deliver/etsi_ts/119600_119699/119612/02.04.01_60/ts_119612v020401p.pdf)
+2. Java KeyStores
 
 ## Disclaimer
 
-The released software is a initial development release version: 
+The released software is an initial development release version: 
 -  The initial development release is an early endeavor reflecting the efforts of a short timeboxed period, and by no means can be considered as the final product.  
 -  The initial development release may be changed substantially over time, might introduce new features but also may change or remove existing ones, potentially breaking compatibility with your existing code.
 -  The initial development release is limited in functional scope.
@@ -48,61 +40,29 @@ The released software is a initial development release version:
 
 ## How to build and run
 
-To start the service locally you can execute 
+To start the service use: 
+
 ```bash
 ./gradlew bootRun
 ```
-To build a local docker image of the service execute
+
+To build a local docker image of the service use:
+
 ```bash
 ./gradlew bootBuildImage
 ```
 
-To start the docker compose environment
-```bash
-# From project root directory 
-cd docker
-docker-compose up -d
-```
-To stop the docker compose environment
-```bash
-# From project root directory 
-cd docker
-docker-compose down
-```
-
 ## Endpoints
 
-### Check a X509 certificate chain if trusted
+An OpenAPI specification of the endpoints provided by Trust Validator Service is available [here](src/main/resources/public/openapi.json).
 
-- _Method_: POST
-- _URL_: http://localhost:8080/trust
-- _Actor_: [Trust](src/main/kotlin/eu/europa/ec/eudi/trustvalidator/adapter/input/web/TrustApi.kt)
-
-An endpoint to validates an incoming x5c chain against configured trust sources (List of Trusted Lists and/or keystores). Payload of this request is a json object with the following acceptable attributes:
-- `x5c`: X509 certificates in Base64 (DER format).
-- `serviceType`: Provider type that X5C chain belongs to. Allowed values: `PIDProvider`, `QEAAProvider`, `PubEAAProvider`, `WalletProvider`.
-
-**Usage:**
-
-```bash
-curl -X POST -H "Content-type: application/json" -d '{
-  "x5c": [
-    "MIIC6zCCApGgAwIBAgIUbX8nbYSLRvy10mKN+hfCVr/8cBcwCgYIKoZIzj0EAwIwXDEeMBwGA1UEAwwVUElEIElzc3VlciBDQSAtIFVUIDAyMS0wKwYDVQQKDCRFVURJIFdhbGxldCBSZWZlcmVuY2UgSW1wbGVtZW50YXRpb24xCzAJBgNVBAYTAlVUMB4XDTI1MDQxMDE0MjU0MFoXDTI2MDcwNDE0MjUzOVowUjEUMBIGA1UEAwwLUElEIERTIC0gMDMxLTArBgNVBAoMJEVVREkgV2FsbGV0IFJlZmVyZW5jZSBJbXBsZW1lbnRhdGlvbjELMAkGA1UEBhMCVVQwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASrxZ13wLj/nUuGebYRmPO0q7pRk1x1SjrqLTvtQFpQcy9TwFCcgie/BBC2j/KpLcCr+oj4tyZAofmvHdaTExbBo4IBOTCCATUwHwYDVR0jBBgwFoAUYseURyi9D6IWIKeawkmURPEB08cwJwYDVR0RBCAwHoIcZGV2Lmlzc3Vlci1iYWNrZW5kLmV1ZGl3LmRldjAWBgNVHSUBAf8EDDAKBggrgQICAAABAjBDBgNVHR8EPDA6MDigNqA0hjJodHRwczovL3ByZXByb2QucGtpLmV1ZGl3LmRldi9jcmwvcGlkX0NBX1VUXzAyLmNybDAdBgNVHQ4EFgQUcs3KyqizHgtXRe32n6JBJHAfaLYwDgYDVR0PAQH/BAQDAgeAMF0GA1UdEgRWMFSGUmh0dHBzOi8vZ2l0aHViLmNvbS9ldS1kaWdpdGFsLWlkZW50aXR5LXdhbGxldC9hcmNoaXRlY3R1cmUtYW5kLXJlZmVyZW5jZS1mcmFtZXdvcmswCgYIKoZIzj0EAwIDSAAwRQIgTVZnchD+Qjq53Xs0oc07y3zG6kAXFkJ+ZKzlVG22sC8CIQDtDMQq0Qm/fQ5orrjRT4XB+0Jb6xFPxX9QkVRaMy/IiA=="
-  ],
-  "serviceType": "PIDProvider"
-}' 'http://localhost:8080/trust'
-```
-
-**Returns:**
-```json
-{
-  "trusted": "true"
-}
-```
+Swagger UI is also available at `/swagger-ui`.
 
 ## Configuration
 
-The Verifier Endpoint application can be configured using the following *environment* variables:
+Trust Validator Service can be configured using the following *environment* variables:
+
+### Server Configuration
 
 Variable: `SERVER_PORT`  
 Description: Port for the HTTP listener of the Verifier Endpoint application  
@@ -132,50 +92,181 @@ Variable: `CORS_MAXAGE`
 Description: Time in seconds of how long pre-flight request responses can be cached by clients  
 Default value: `3600`
 
-### Configuring trust sources
+### DSS Configuration
 
-The verifier supports the configuration of multiple trust sources, that will be used to trust the issuers of presented credentials.  
-Each trust source is associated with a regex pattern, that will be used to match the trust source to an issuer, based on a credential's docType/vct.
-Each trust source can be configured with a List of Trusted Lists, a Keystore or both.
-The trust sources are configured using the environment variable `TRUSTSOURCES` and are indexed starting from `0`. You can define multiple trust sources by incrementing the index (e.g., VERIFIER_TRUSTSOURCES_0_*, VERIFIER_TRUSTSOURCES_1_*, etc.)
+Variable: `TRUST_VALIDATOR_DSS_CACHE_LOCATION`  
+Description: Path to the directory where DSS will cache LoTLs
 
-Variable: `TRUSTSOURCES_0_PROVIDERTYPE`  
-Description: The provider type of the trust source.  
-Default value: `PIDProvider`  
-Example: `PIDProvider`, `QEAAProvider`, `PubEAAProvider`, `WalletProvider`, `EAAProvider`  
+### Trust Sources – Wallet Providers
 
-Variable: `TRUSTSOURCES_0_LOTL_LOCATION`  
-Description: If present, the URL of the List of Trusted Lists from which to load the X509 Certificates for this trust source  
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WALLET_PROVIDERS_LOCATION`  
+Description: URL of the LoTL from which to load Trust Anchors for Wallet Providers  
 
-Variable: `TRUSTSOURCES_0_LOTL_REFRESHINTERVAL`  
-Description: If present, a cron expression with the refresh interval of the List of Trusted Lists in seconds. If not present, the default value is `0 0 * * * * ` (every hour)  
-Example: `0 0 */4 * * *`  
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WALLET_PROVIDERS_SIGNATURE_VERIFICATION_LOCATION`  
+Description: Location of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL, uses Spring Resource notation  
 
-Variable: `TRUSTSOURCES_0_LOTL_SERVICETYPEFILTER`  
-Description: If present, the service type filter to be used when loading the List of Trusted Lists. If not present, all service types are loaded. Valid values are `PIDProvider`, `QEEAProvider` and `PubEAAProvider`.  
-Example: `PIDProvider`  
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WALLET_PROVIDERS_SIGNATURE_VERIFICATION_KEY_STORE_TYPE`  
+Description: Type of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL   
+Default value: `JKS`
 
-Variable: `TRUSTSOURCES_0_LOTL_KEYSTORE_PATH`  
-Description: If present, the URL of the Keystore which contains the public key that was used to sign the List of Trusted Lists  
-Examples: `classpath:lotl-key.jks`, `file:///lotl-key.jks`  
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WALLET_PROVIDERS_SIGNATURE_VERIFICATION_PASSWORD`  
+Description: Password of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL  
 
-Variable: `TRUSTSOURCES_0_LOTL_KEYSTORE_TYPE`  
-Description: Type of the Keystore which contains the public key that was used to sign the List of Trusted Lists  
-Examples: `jks`, `pkcs12`  
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WALLET_PROVIDERS_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI  
 
-Variable: `TRUSTSOURCES_0_LOTL_KEYSTORE_PASSWORD`  
-Description: If present and non-blank, the password of the Keystore which contains the public key that was used to sign the List of Trusted Lists  
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WALLET_PROVIDERS_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
 
-Variable: `TRUSTSOURCES_0_KEYSTORE_PATH`  
-Description: If present, the URL of the Keystore from which to load the X509 Certificates for this trust source   
-Examples: `classpath:trusted-issuers.jks`, `file:///trusted-issuers.jks`  
+### Trust Sources – PID Providers
 
-Variable: `TRUSTSOURCES_0_KEYSTORE_TYPE`  
-Description: Type of the Keystore from which to load the X509 Certificates for this trust source  
-Examples: `jks`, `pkcs12`  
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PID_PROVIDERS_LOCATION`  
+Description: URL of the LoTL from which to load Trust Anchors for PID Providers
 
-Variable: `TRUSTSOURCES_0_KEYSTORE_PASSWORD`  
-Description: If present and non-blank, the password of the Keystore from which to load the X509 Certificates for this trust source  
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PID_PROVIDERS_SIGNATURE_VERIFICATION_LOCATION`  
+Description: Location of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL, uses Spring Resource notation
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PID_PROVIDERS_SIGNATURE_VERIFICATION_KEY_STORE_TYPE`  
+Description: Type of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL   
+Default value: `JKS`
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PID_PROVIDERS_SIGNATURE_VERIFICATION_PASSWORD`  
+Description: Password of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PID_PROVIDERS_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PID_PROVIDERS_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
+### Trust Sources – QEAA Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_QEAA_PROVIDERS_LOCATION`  
+Description: URL of the LoTL from which to load Trust Anchors for QEAA Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_QEAA_PROVIDERS_SIGNATURE_VERIFICATION_LOCATION`  
+Description: Location of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL, uses Spring Resource notation
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_QEAA_PROVIDERS_SIGNATURE_VERIFICATION_KEY_STORE_TYPE`  
+Description: Type of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL   
+Default value: `JKS`
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_QEAA_PROVIDERS_SIGNATURE_VERIFICATION_PASSWORD`  
+Description: Password of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_QEAA_PROVIDERS_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_QEAA_PROVIDERS_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
+### Trust Sources – PubEAA Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PUB_EAA_PROVIDERS_LOCATION`  
+Description: URL of the LoTL from which to load Trust Anchors for PubEAA Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PUB_EAA_PROVIDERS_SIGNATURE_VERIFICATION_LOCATION`  
+Description: Location of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL, uses Spring Resource notation
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PUB_EAA_PROVIDERS_SIGNATURE_VERIFICATION_KEY_STORE_TYPE`  
+Description: Type of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL   
+Default value: `JKS`
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PUB_EAA_PROVIDERS_SIGNATURE_VERIFICATION_PASSWORD`  
+Description: Password of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PUB_EAA_PROVIDERS_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PUB_EAA_PROVIDERS_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
+### Trust Sources – EAA Providers
+
+Trust Validator Service allows configuring multiple EAA Providers. Each EAA Provider corresponds to a different use-case.
+
+> [!NOTE]
+> 
+> Substitute `XXX` with the index of the EAA Provider you are configuring.
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_EAA_PROVIDERS_XXX_USE_CASE`    
+Description: The use-case of the EAA Provider  
+Example: `mDL`  
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_EAA_PROVIDERS_XXX_LOTL_LOCATION`  
+Description: URL of the LoTL from which to load Trust Anchors for the current EAA Provider
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_EAA_PROVIDERS_XXX_LOTL_SIGNATURE_VERIFICATION_LOCATION`  
+Description: Location of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL, uses Spring Resource notation
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_EAA_PROVIDERS_XXX_LOTL_SIGNATURE_VERIFICATION_KEY_STORE_TYPE`  
+Description: Type of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL   
+Default value: `JKS`
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_EAA_PROVIDERS_XXX_LOTL_SIGNATURE_VERIFICATION_PASSWORD`  
+Description: Password of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_EAA_PROVIDERS_XXX_LOTL_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_EAA_PROVIDERS_XXX_LOTL_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
+### Trust Sources – Wallet Relying Party Access Certificate Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPAC_PROVIDERS_LOCATION`  
+Description: URL of the LoTL from which to load Trust Anchors for Wallet Relying Party Access Certificate Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPAC_PROVIDERS_SIGNATURE_VERIFICATION_LOCATION`  
+Description: Location of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL, uses Spring Resource notation
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPAC_PROVIDERS_SIGNATURE_VERIFICATION_KEY_STORE_TYPE`  
+Description: Type of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL   
+Default value: `JKS`
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPAC_PROVIDERS_SIGNATURE_VERIFICATION_PASSWORD`  
+Description: Password of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPAC_PROVIDERS_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPAC_PROVIDERS_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
+### Trust Sources – Wallet Relying Party Registration Certificate Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPRC_PROVIDERS_LOCATION`  
+Description: URL of the LoTL from which to load Trust Anchors for Wallet Relying Party Registration Certificate Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPRC_PROVIDERS_SIGNATURE_VERIFICATION_LOCATION`  
+Description: Location of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL, uses Spring Resource notation
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPRC_PROVIDERS_SIGNATURE_VERIFICATION_KEY_STORE_TYPE`  
+Description: Type of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL   
+Default value: `JKS`
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPRC_PROVIDERS_SIGNATURE_VERIFICATION_PASSWORD`  
+Description: Password of the Java KeyStore that contains X.509 certificates that can be used to verify the signature of the LoTL
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPRC_PROVIDERS_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPRC_PROVIDERS_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
+### Trust Sources – Java KeyStore
+
+Trust Validator Service allows configuring a Java KeyStore that contains Trust Anchors. These Trust Anchors are used to verify any type of Provider.
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_KEY_STORE_LOCATION`  
+Description: Location of the Java KeyStore that contains Trust Anchors, uses Spring Resource notation  
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_KEY_STORE_KEY_STORE_TYPE`  
+Description: Type of the Java KeyStore that contains Trust Anchors   
+Default value: `JKS`
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_KEY_STORE_PASSWORD`  
+Description: Password of the Java KeyStore that contains Trust Anchors  
 
 ## How to contribute
 
