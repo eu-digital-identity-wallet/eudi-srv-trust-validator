@@ -17,11 +17,13 @@ package eu.europa.ec.eudi.trustvalidator
 
 import arrow.core.NonEmptyList
 import arrow.core.toNonEmptyListOrNull
+import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrusted
 import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContext
 import eu.europa.ec.eudi.etsi1196x2.consultation.ValidateCertificateChainJvm
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
 import eu.europa.ec.eudi.etsi1196x2.consultation.dss.DSSAdapter
 import eu.europa.ec.eudi.etsi1196x2.consultation.dss.usingLoTL
+import eu.europa.ec.eudi.etsi1196x2.consultation.usingKeystore
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
@@ -47,6 +49,7 @@ import org.springframework.web.cors.reactive.CorsConfigurationSource
 import java.net.URI
 import java.net.URL
 import java.nio.file.Path
+import java.security.KeyStore
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
 import kotlin.time.Duration.Companion.hours
@@ -59,7 +62,7 @@ internal class Beans : BeanRegistrarDsl({
         val config = bean<TrustValidatorConfigurationProperties>()
         val trustSources = config.trustSources
 
-        IsChainTrustedForContext.usingLoTL(
+        val usingLoTL = IsChainTrustedForContext.usingLoTL(
             sourcePerVerification = trustSources?.lotlSources().orEmpty(),
             validateCertificateChain = ValidateCertificateChainJvm {
                 isRevocationEnabled = false
@@ -71,6 +74,10 @@ internal class Beans : BeanRegistrarDsl({
             clock = bean<Clock>().asKotlinClock(),
             ttl = 10.minutes,
         )
+
+        val usingKeyStore = IsChainTrustedForContext(trustSources?.keyStoreSources().orEmpty())
+
+        usingLoTL.or(usingKeyStore)
     }
 
     registerBean { IsChainTrustedUseCase(bean()) }
@@ -149,6 +156,7 @@ data class TrustSourcesConfigurationProperties(
     val eaaProviders: List<EAALoTLConfigurationProperties>? = null,
     val wrpacProviders: LoTLConfigurationProperties? = null,
     val wrprcProviders: LoTLConfigurationProperties? = null,
+    val keyStore: KeyStoreConfigurationProperties? = null,
 )
 
 data class LoTLConfigurationProperties(
@@ -261,5 +269,54 @@ private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationC
         // Wallet Relying Party Registration Certificate Providers
         if (null != wrprcProviders) {
             put(VerificationContext.WalletRelyingPartyRegistrationCertificate, wrprcProviders.issuanceLoTLSource())
+        }
+    }
+
+private fun TrustSourcesConfigurationProperties.keyStoreSources():
+    Map<VerificationContext, IsChainTrusted<List<X509Certificate>, TrustAnchor>> =
+    buildMap {
+        if (null != keyStore) {
+            val isChainTrusted = IsChainTrusted.usingKeystore(
+                ValidateCertificateChainJvm {
+                    isRevocationEnabled = false
+                },
+            ) {
+                keyStore.location.inputStream.use { inputStream ->
+                    KeyStore.getInstance(keyStore.keyStoreType).apply {
+                        load(inputStream, (keyStore.password ?: "").toCharArray())
+                    }
+                }
+            }
+
+            // Wallet Providers
+            put(VerificationContext.WalletInstanceAttestation, isChainTrusted)
+            put(VerificationContext.WalletUnitAttestation, isChainTrusted)
+            put(VerificationContext.WalletUnitAttestationStatus, isChainTrusted)
+
+            // PID Providers
+            put(VerificationContext.PID, isChainTrusted)
+            put(VerificationContext.PIDStatus, isChainTrusted)
+
+            // QEAA Providers
+            put(VerificationContext.QEAA, isChainTrusted)
+            put(VerificationContext.QEAAStatus, isChainTrusted)
+
+            // PubEAA Providers
+            put(VerificationContext.PubEAA, isChainTrusted)
+            put(VerificationContext.PubEAAStatus, isChainTrusted)
+
+            // EAA Providers
+            if (!eaaProviders.isNullOrEmpty()) {
+                eaaProviders.forEach { eaaProvider ->
+                    put(VerificationContext.EAA(eaaProvider.useCase), isChainTrusted)
+                    put(VerificationContext.EAAStatus(eaaProvider.useCase), isChainTrusted)
+                }
+            }
+
+            // Wallet Relying Party Access Certificate Providers
+            put(VerificationContext.WalletRelyingPartyAccessCertificate, isChainTrusted)
+
+            // Wallet Relying Party Registration Certificate Providers
+            put(VerificationContext.WalletRelyingPartyRegistrationCertificate, isChainTrusted)
         }
     }
