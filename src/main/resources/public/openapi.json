@@ -11,7 +11,7 @@
     }
   ],
   "paths": {
-    "/v2/trust": {
+    "/trust": {
       "post": {
         "tags": [
           "trust validator"

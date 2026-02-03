@@ -27,13 +27,13 @@ internal class TrustApi(
 ) {
     val route: RouterFunction<ServerResponse> = coRouter {
         POST(
-            TRUST_V2,
+            TRUST,
             contentType(APPLICATION_JSON) and accept(APPLICATION_JSON),
-            ::trustQueryV2,
+            ::trustQuery,
         )
     }
 
-    private suspend fun trustQueryV2(request: ServerRequest): ServerResponse {
+    private suspend fun trustQuery(request: ServerRequest): ServerResponse {
         val trustQuery = request.awaitBody<TrustQueryTO>()
         return isChainTrusted(trustQuery).fold(
             { badRequest().bodyValueAndAwait(it) },
@@ -42,6 +42,6 @@ internal class TrustApi(
     }
 
     companion object {
-        const val TRUST_V2 = "/v2/trust"
+        const val TRUST = "/trust"
     }
 }
