@@ -134,7 +134,6 @@ data class TrustValidatorConfigurationProperties(
 
 data class DSSConfigurationProperties(
     val cacheLocation: Path,
-    val timeToLive: Duration,
 )
 
 data class TrustSourcesConfigurationProperties(
