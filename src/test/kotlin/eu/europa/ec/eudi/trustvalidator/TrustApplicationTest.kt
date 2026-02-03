@@ -21,7 +21,13 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import kotlin.test.assertTrue
 
-@SpringBootTest(classes = [TrustApplication::class], webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    classes = [TrustApplication::class],
+    webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+    properties = [
+        "trust-validator.dss.cache-location=dss-cache",
+    ],
+)
 class TrustApplicationTest {
 
     @Autowired
