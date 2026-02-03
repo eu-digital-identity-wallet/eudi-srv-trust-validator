@@ -59,59 +59,8 @@ internal class Beans : BeanRegistrarDsl({
         val config = bean<TrustValidatorConfigurationProperties>()
         val trustSources = config.trustSources
 
-        val sourcePerVerification = buildMap {
-            if (null != trustSources) {
-                // Wallet Providers
-                if (null != trustSources.walletProviders) {
-                    val walletProvidersIssuance =
-                        trustSources.walletProviders.issuanceLoTLSource()
-                    val walletProvidersRevocation =
-                        trustSources.walletProviders.revocationLoTLSource()
-                    put(VerificationContext.WalletInstanceAttestation, walletProvidersIssuance)
-                    put(VerificationContext.WalletUnitAttestation, walletProvidersIssuance)
-                    put(VerificationContext.WalletUnitAttestationStatus, walletProvidersRevocation)
-                }
-
-                // PID Providers
-                if (null != trustSources.pidProviders) {
-                    put(VerificationContext.PID, trustSources.pidProviders.issuanceLoTLSource())
-                    put(VerificationContext.PIDStatus, trustSources.pidProviders.revocationLoTLSource())
-                }
-
-                // QEAA Providers
-                if (null != trustSources.qeaaProviders) {
-                    put(VerificationContext.QEAA, trustSources.qeaaProviders.issuanceLoTLSource())
-                    put(VerificationContext.QEAAStatus, trustSources.qeaaProviders.revocationLoTLSource())
-                }
-
-                // PubEAA Providers
-                if (null != trustSources.pubEaaProviders) {
-                    put(VerificationContext.PubEAA, trustSources.pubEaaProviders.issuanceLoTLSource())
-                    put(VerificationContext.PubEAAStatus, trustSources.pubEaaProviders.revocationLoTLSource())
-                }
-
-                // EAA Providers
-                if (!trustSources.eaaProviders.isNullOrEmpty()) {
-                    trustSources.eaaProviders.forEach { eaaProvider ->
-                        put(VerificationContext.EAA(eaaProvider.useCase), eaaProvider.lotl.issuanceLoTLSource())
-                        put(VerificationContext.EAAStatus(eaaProvider.useCase), eaaProvider.lotl.revocationLoTLSource())
-                    }
-                }
-
-                // Wallet Relying Party Access Certificate Providers
-                if (null != trustSources.wrpacProviders) {
-                    put(VerificationContext.WalletRelyingPartyAccessCertificate, trustSources.wrpacProviders.issuanceLoTLSource())
-                }
-
-                // Wallet Relying Party Registration Certificate Providers
-                if (null != trustSources.wrprcProviders) {
-                    put(VerificationContext.WalletRelyingPartyRegistrationCertificate, trustSources.wrprcProviders.issuanceLoTLSource())
-                }
-            }
-        }
-
         IsChainTrustedForContext.usingLoTL(
-            sourcePerVerification = sourcePerVerification,
+            sourcePerVerification = trustSources?.lotlSources().orEmpty(),
             validateCertificateChain = ValidateCertificateChainJvm {
                 isRevocationEnabled = false
             },
@@ -259,5 +208,54 @@ private fun lotlSourceOf(
                     (signatureVerificationKeyStore.password ?: "").toCharArray(),
                 )
             }
+        }
+    }
+
+private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationContext, LOTLSource> =
+    buildMap {
+        // Wallet Providers
+        if (null != walletProviders) {
+            val walletProvidersIssuance = walletProviders.issuanceLoTLSource()
+            val walletProvidersRevocation = walletProviders.revocationLoTLSource()
+
+            put(VerificationContext.WalletInstanceAttestation, walletProvidersIssuance)
+            put(VerificationContext.WalletUnitAttestation, walletProvidersIssuance)
+            put(VerificationContext.WalletUnitAttestationStatus, walletProvidersRevocation)
+        }
+
+        // PID Providers
+        if (null != pidProviders) {
+            put(VerificationContext.PID, pidProviders.issuanceLoTLSource())
+            put(VerificationContext.PIDStatus, pidProviders.revocationLoTLSource())
+        }
+
+        // QEAA Providers
+        if (null != qeaaProviders) {
+            put(VerificationContext.QEAA, qeaaProviders.issuanceLoTLSource())
+            put(VerificationContext.QEAAStatus, qeaaProviders.revocationLoTLSource())
+        }
+
+        // PubEAA Providers
+        if (null != pubEaaProviders) {
+            put(VerificationContext.PubEAA, pubEaaProviders.issuanceLoTLSource())
+            put(VerificationContext.PubEAAStatus, pubEaaProviders.revocationLoTLSource())
+        }
+
+        // EAA Providers
+        if (!eaaProviders.isNullOrEmpty()) {
+            eaaProviders.forEach { eaaProvider ->
+                put(VerificationContext.EAA(eaaProvider.useCase), eaaProvider.lotl.issuanceLoTLSource())
+                put(VerificationContext.EAAStatus(eaaProvider.useCase), eaaProvider.lotl.revocationLoTLSource())
+            }
+        }
+
+        // Wallet Relying Party Access Certificate Providers
+        if (null != wrpacProviders) {
+            put(VerificationContext.WalletRelyingPartyAccessCertificate, wrpacProviders.issuanceLoTLSource())
+        }
+
+        // Wallet Relying Party Registration Certificate Providers
+        if (null != wrprcProviders) {
+            put(VerificationContext.WalletRelyingPartyRegistrationCertificate, wrprcProviders.issuanceLoTLSource())
         }
     }
