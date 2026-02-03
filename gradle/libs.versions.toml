@@ -40,6 +40,7 @@ spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-
 spring-boot-starter-thymeleaf = { module = "org.springframework.boot:spring-boot-starter-thymeleaf" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "springboot" }
 webjars-locator-lite = { module = "org.webjars:webjars-locator-lite" }
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions" }
 
@@ -51,3 +52,4 @@ kotlin-plugin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref 
 kotlin-plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 dependencycheck = { id = "org.owasp.dependencycheck", version.ref = "dependencycheck" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }

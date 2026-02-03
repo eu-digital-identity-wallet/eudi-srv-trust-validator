@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.plugin.spring)
     alias(libs.plugins.kotlin.plugin.serialization)
     alias(libs.plugins.spotless)
+    alias(libs.plugins.kapt)
     alias(libs.plugins.kover)
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.dependencycheck)
@@ -42,6 +43,7 @@ dependencies {
     implementation(libs.spring.boot.starter.thymeleaf)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.reactor.kotlin.extensions)
+    kapt(libs.spring.boot.configuration.processor)
 
     implementation(libs.webjars.locator.lite)
     implementation(libs.swagger.ui)
