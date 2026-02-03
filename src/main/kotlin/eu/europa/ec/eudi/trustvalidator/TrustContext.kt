@@ -24,6 +24,7 @@ import eu.europa.ec.eudi.etsi1196x2.consultation.dss.DSSAdapter
 import eu.europa.ec.eudi.etsi1196x2.consultation.dss.usingLoTL
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
+import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
 import eu.europa.ec.eudi.trustvalidator.domain.Clock
 import eu.europa.ec.eudi.trustvalidator.domain.Clock.Companion.asKotlinClock
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
@@ -73,6 +74,11 @@ internal class Beans : BeanRegistrarDsl({
     }
 
     registerBean { IsChainTrustedUseCase(bean()) }
+
+    registerBean {
+        val configuration = bean<TrustValidatorConfigurationProperties>()
+        CleanupDSSCache(configuration.dss.cacheLocation)
+    }
 
     registerBean {
         val trustApi = TrustApi(bean())
