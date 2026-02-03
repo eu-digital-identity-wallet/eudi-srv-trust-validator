@@ -24,9 +24,9 @@ import org.springframework.scheduling.annotation.EnableScheduling
 @SpringBootApplication
 @EnableConfigurationProperties(TrustValidatorConfigurationProperties::class)
 @EnableScheduling
-@Import(Beans::class)
-class TrustApplication
+@Import(TrustValidatorServiceContext::class)
+class TrustValidatorServiceApplication
 
 fun main(args: Array<String>) {
-    runApplication<TrustApplication>(*args)
+    runApplication<TrustValidatorServiceApplication>(*args)
 }

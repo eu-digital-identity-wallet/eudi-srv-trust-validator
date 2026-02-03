@@ -22,13 +22,13 @@ import org.springframework.context.ApplicationContext
 import kotlin.test.assertTrue
 
 @SpringBootTest(
-    classes = [TrustApplication::class],
+    classes = [TrustValidatorServiceApplication::class],
     webEnvironment = SpringBootTest.WebEnvironment.MOCK,
     properties = [
         "trust-validator.dss.cache-location=dss-cache",
     ],
 )
-class TrustApplicationTest {
+class TrustValidatorServiceApplicationTest {
 
     @Autowired
     lateinit var applicationContext: ApplicationContext

@@ -51,7 +51,7 @@ import java.security.cert.X509Certificate
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
-internal class Beans : BeanRegistrarDsl({
+internal class TrustValidatorServiceContext : BeanRegistrarDsl({
     registerBean { Clock.System }
 
     registerBean<IsChainTrustedForContext<List<X509Certificate>, TrustAnchor>> {
