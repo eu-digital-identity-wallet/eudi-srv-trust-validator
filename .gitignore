@@ -38,3 +38,6 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+### DSS cache ###
+dss-cache
