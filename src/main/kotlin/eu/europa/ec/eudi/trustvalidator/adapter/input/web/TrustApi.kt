@@ -15,7 +15,7 @@
  */
 package eu.europa.ec.eudi.trustvalidator.adapter.input.web
 
-import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrusted
+import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.TrustQueryTO
 import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.web.reactive.function.server.*
@@ -23,7 +23,7 @@ import org.springframework.web.reactive.function.server.ServerResponse.badReques
 import org.springframework.web.reactive.function.server.ServerResponse.ok
 
 internal class TrustApi(
-    private val isChainTrusted: IsChainTrusted,
+    private val isChainTrusted: IsChainTrustedUseCase,
 ) {
     val route: RouterFunction<ServerResponse> = coRouter {
         POST(

@@ -26,6 +26,7 @@ import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
 import eu.europa.ec.eudi.trustvalidator.domain.Clock
 import eu.europa.ec.eudi.trustvalidator.domain.Clock.Companion.asKotlinClock
+import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import eu.europa.esig.dss.spi.x509.KeyStoreCertificateSource
 import eu.europa.esig.dss.tsl.function.GrantedOrRecognizedAtNationalLevelTrustAnchorPeriodPredicate
 import eu.europa.esig.dss.tsl.source.LOTLSource
@@ -47,10 +48,8 @@ import java.net.URL
 import java.nio.file.Path
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
-import java.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
-import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrusted as IsChainTrustedUseCase
 
 internal class Beans : BeanRegistrarDsl({
     registerBean { Clock.System }

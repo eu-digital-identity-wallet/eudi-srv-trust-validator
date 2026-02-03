@@ -16,7 +16,6 @@
 package eu.europa.ec.eudi.trustvalidator.port.input.trust
 
 import arrow.core.Either
-import arrow.core.Either.Companion.catch
 import arrow.core.NonEmptyList
 import arrow.core.raise.catch
 import arrow.core.raise.either
@@ -65,12 +64,10 @@ data class TrustResponseTO(val trusted: Boolean)
 @Serializable
 data class ErrorResponseTO(val description: String)
 
-fun interface IsChainTrusted {
-    suspend operator fun invoke(query: TrustQueryTO): Either<ErrorResponseTO, TrustResponseTO>
-}
-
-fun IsChainTrusted(isChainTrustedForContext: IsChainTrustedForContext<List<X509Certificate>, TrustAnchor>): IsChainTrusted =
-    IsChainTrusted { query ->
+class IsChainTrustedUseCase(
+    private val isChainTrustedForContext: IsChainTrustedForContext<List<X509Certificate>, TrustAnchor>,
+) {
+    suspend operator fun invoke(query: TrustQueryTO): Either<ErrorResponseTO, TrustResponseTO> =
         either {
             val verificationContext = query.verificationContext().bind()
             val result = catch({ isChainTrustedForContext(query.chain, verificationContext) }) { error ->
@@ -85,7 +82,7 @@ fun IsChainTrusted(isChainTrustedForContext: IsChainTrustedForContext<List<X509C
                 is CertificationChainValidation.NotTrusted -> TrustResponseTO(false)
             }
         }
-    }
+}
 
 private fun TrustQueryTO.verificationContext(): Either<ErrorResponseTO, VerificationContext> =
     either {
