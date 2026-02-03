@@ -15,6 +15,11 @@
  */
 package eu.europa.ec.eudi.trustvalidator.adapter.input.web
 
+import arrow.core.raise.catch
+import arrow.core.raise.context.bind
+import arrow.core.raise.context.raise
+import arrow.core.raise.either
+import arrow.core.raise.result
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.ErrorResponseTO
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.TrustQueryTO
@@ -36,8 +41,20 @@ internal class TrustApi(
     }
 
     private suspend fun trustQuery(request: ServerRequest): ServerResponse {
-        val trustQuery = request.awaitBody<TrustQueryTO>()
-        return isChainTrusted(trustQuery).fold(
+        val result = either {
+            val trustQuery = catch({ request.awaitBody<TrustQueryTO>() }) {
+                val description = buildString {
+                    append("Request body cannot be parsed")
+                    if (null != it.message) {
+                        append(": ${it.message}")
+                    }
+                }
+                raise(ErrorResponseTO.ClientErrorResponseTO(description))
+            }
+            isChainTrusted(trustQuery).bind()
+        }
+
+        return result.fold(
             {
                 val status = when (it) {
                     is ErrorResponseTO.ClientErrorResponseTO -> HttpStatus.BAD_REQUEST
