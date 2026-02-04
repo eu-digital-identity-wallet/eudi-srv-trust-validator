@@ -28,6 +28,7 @@ import eu.europa.esig.dss.spi.x509.KeyStoreCertificateSource
 import eu.europa.esig.dss.tsl.function.GrantedOrRecognizedAtNationalLevelTrustAnchorPeriodPredicate
 import eu.europa.esig.dss.tsl.source.LOTLSource
 import kotlinx.serialization.json.Json
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.BeanRegistrarDsl
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.http.codec.CodecCustomizer
@@ -49,6 +50,8 @@ import java.security.cert.X509Certificate
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
+
+private val log = LoggerFactory.getLogger(TrustValidatorServiceContext::class.java)
 
 internal class TrustValidatorServiceContext : BeanRegistrarDsl({
     registerBean { Clock.System }
@@ -164,8 +167,13 @@ data class LoTLConfigurationProperties(
 data class KeyStoreConfigurationProperties(
     val location: Resource,
     val keyStoreType: String = "JKS",
-    val password: String? = null,
+    val password: Password? = null,
 )
+
+@JvmInline
+value class Password(val value: String) {
+    override fun toString(): String = "Password(REDACTED)"
+}
 
 data class EAALoTLConfigurationProperties(
     val useCase: String,
@@ -212,7 +220,7 @@ private fun lotlSourceOf(
                 KeyStoreCertificateSource(
                     it,
                     signatureVerificationKeyStore.keyStoreType,
-                    (signatureVerificationKeyStore.password ?: "").toCharArray(),
+                    (signatureVerificationKeyStore.password?.value ?: "").toCharArray(),
                 )
             }
         }
@@ -222,6 +230,7 @@ private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationC
     buildMap {
         // Wallet Providers
         if (null != walletProviders) {
+            log.info("Configuring Wallet Providers using LoTL: $walletProviders")
             val walletProvidersIssuance = walletProviders.issuanceLoTLSource()
             val walletProvidersRevocation = walletProviders.revocationLoTLSource()
 
@@ -232,18 +241,21 @@ private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationC
 
         // PID Providers
         if (null != pidProviders) {
+            log.info("Configuring PID Providers using LoTL: $pidProviders")
             put(VerificationContext.PID, pidProviders.issuanceLoTLSource())
             put(VerificationContext.PIDStatus, pidProviders.revocationLoTLSource())
         }
 
         // QEAA Providers
         if (null != qeaaProviders) {
+            log.info("Configuring QEAA Providers using LoTL: $qeaaProviders")
             put(VerificationContext.QEAA, qeaaProviders.issuanceLoTLSource())
             put(VerificationContext.QEAAStatus, qeaaProviders.revocationLoTLSource())
         }
 
         // PubEAA Providers
         if (null != pubEaaProviders) {
+            log.info("Configuring PubEAA Providers using LoTL: $pubEaaProviders")
             put(VerificationContext.PubEAA, pubEaaProviders.issuanceLoTLSource())
             put(VerificationContext.PubEAAStatus, pubEaaProviders.revocationLoTLSource())
         }
@@ -251,6 +263,7 @@ private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationC
         // EAA Providers
         if (!eaaProviders.isNullOrEmpty()) {
             eaaProviders.forEach { eaaProvider ->
+                log.info("Configuring EAA Provider ${eaaProvider.useCase} using LoTL: ${eaaProvider.lotl}")
                 put(VerificationContext.EAA(eaaProvider.useCase), eaaProvider.lotl.issuanceLoTLSource())
                 put(VerificationContext.EAAStatus(eaaProvider.useCase), eaaProvider.lotl.revocationLoTLSource())
             }
@@ -258,11 +271,13 @@ private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationC
 
         // Wallet Relying Party Access Certificate Providers
         if (null != wrpacProviders) {
+            log.info("Configuring WRPAC Providers using LoTL: $wrpacProviders")
             put(VerificationContext.WalletRelyingPartyAccessCertificate, wrpacProviders.issuanceLoTLSource())
         }
 
         // Wallet Relying Party Registration Certificate Providers
         if (null != wrprcProviders) {
+            log.info("Configuring WRPRC Providers using LoTL: $wrprcProviders")
             put(VerificationContext.WalletRelyingPartyRegistrationCertificate, wrprcProviders.issuanceLoTLSource())
         }
     }
@@ -278,40 +293,49 @@ private fun TrustSourcesConfigurationProperties.keyStoreSources():
             ) {
                 keyStore.location.inputStream.use { inputStream ->
                     KeyStore.getInstance(keyStore.keyStoreType).apply {
-                        load(inputStream, (keyStore.password ?: "").toCharArray())
+                        load(inputStream, (keyStore.password?.value ?: "").toCharArray())
                     }
+                }.also {
+                    log.info("KeyStore contains the following aliases: ${it.aliases().toList().joinToString(separator = ", ")}")
                 }
             }
 
             // Wallet Providers
+            log.info("Configuring Wallet Providers using KeyStore: $keyStore")
             put(VerificationContext.WalletInstanceAttestation, isChainTrusted)
             put(VerificationContext.WalletUnitAttestation, isChainTrusted)
             put(VerificationContext.WalletUnitAttestationStatus, isChainTrusted)
 
             // PID Providers
+            log.info("Configuring PID Providers using KeyStore: $keyStore")
             put(VerificationContext.PID, isChainTrusted)
             put(VerificationContext.PIDStatus, isChainTrusted)
 
             // QEAA Providers
+            log.info("Configuring QEAA Providers using KeyStore: $keyStore")
             put(VerificationContext.QEAA, isChainTrusted)
             put(VerificationContext.QEAAStatus, isChainTrusted)
 
             // PubEAA Providers
+            log.info("Configuring PubEAA Providers using KeyStore: $keyStore")
             put(VerificationContext.PubEAA, isChainTrusted)
             put(VerificationContext.PubEAAStatus, isChainTrusted)
 
             // EAA Providers
             if (!eaaProviders.isNullOrEmpty()) {
                 eaaProviders.forEach { eaaProvider ->
+                    log.info("Configuring EAA Provider ${eaaProvider.useCase} using KeyStore: $keyStore")
                     put(VerificationContext.EAA(eaaProvider.useCase), isChainTrusted)
                     put(VerificationContext.EAAStatus(eaaProvider.useCase), isChainTrusted)
                 }
             }
 
             // Wallet Relying Party Access Certificate Providers
+            log.info("Configuring WRPAC Providers using KeyStore: $keyStore")
             put(VerificationContext.WalletRelyingPartyAccessCertificate, isChainTrusted)
 
             // Wallet Relying Party Registration Certificate Providers
+            log.info("Configuring WRPRC Providers using KeyStore: $keyStore")
             put(VerificationContext.WalletRelyingPartyRegistrationCertificate, isChainTrusted)
         }
     }
