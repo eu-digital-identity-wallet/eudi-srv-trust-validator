@@ -16,10 +16,7 @@
 package eu.europa.ec.eudi.trustvalidator.adapter.input.web
 
 import arrow.core.raise.catch
-import arrow.core.raise.context.bind
-import arrow.core.raise.context.raise
 import arrow.core.raise.either
-import arrow.core.raise.result
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.ErrorResponseTO
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.TrustQueryTO
@@ -60,9 +57,9 @@ internal class TrustApi(
                     is ErrorResponseTO.ClientErrorResponseTO -> HttpStatus.BAD_REQUEST
                     is ErrorResponseTO.ServerErrorResponseTO -> HttpStatus.INTERNAL_SERVER_ERROR
                 }
-                status(status).bodyValueAndAwait(it)
+                status(status).json().bodyValueAndAwait(it)
             },
-            { ok().bodyValueAndAwait(it) },
+            { ok().json().bodyValueAndAwait(it) },
         )
     }
 
