@@ -168,7 +168,13 @@ data class KeyStoreConfigurationProperties(
     val location: Resource,
     val keyStoreType: String = "JKS",
     val password: Password? = null,
-)
+) {
+    init {
+        require(location.exists() && location.isFile && location.isReadable) {
+            "location must point to an existing readable file"
+        }
+    }
+}
 
 @JvmInline
 value class Password(val value: String) {
