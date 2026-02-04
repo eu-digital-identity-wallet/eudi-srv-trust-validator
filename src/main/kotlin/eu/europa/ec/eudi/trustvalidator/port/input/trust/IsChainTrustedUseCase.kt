@@ -21,7 +21,6 @@ import arrow.core.raise.catch
 import arrow.core.raise.either
 import arrow.core.raise.ensureNotNull
 import eu.europa.ec.eudi.etsi1196x2.consultation.CertificationChainValidation
-import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContext
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
 import eu.europa.ec.eudi.trustvalidator.adapter.out.serialization.X509CertificateChainSerializer
 import eu.europa.ec.eudi.trustvalidator.adapter.out.serialization.X509CertificateSerializer
@@ -84,13 +83,20 @@ sealed interface ErrorResponseTO {
     ) : ErrorResponseTO
 }
 
+fun interface IsChainTrusted {
+    suspend operator fun invoke(
+        chain: NonEmptyList<X509Certificate>,
+        context: VerificationContext,
+    ): CertificationChainValidation<TrustAnchor>?
+}
+
 class IsChainTrustedUseCase(
-    private val isChainTrustedForContext: IsChainTrustedForContext<List<X509Certificate>, TrustAnchor>,
+    private val isChainTrusted: IsChainTrusted,
 ) {
     suspend operator fun invoke(query: TrustQueryTO): Either<ErrorResponseTO, TrustResponseTO> =
         either {
             val verificationContext = query.verificationContext().bind()
-            val result = catch({ isChainTrustedForContext(query.chain, verificationContext) }) { error ->
+            val result = catch({ isChainTrusted(query.chain, verificationContext) }) { error ->
                 CertificationChainValidation.NotTrusted(error)
             }
             ensureNotNull(result) {

@@ -16,6 +16,7 @@
 package eu.europa.ec.eudi.trustvalidator
 
 import arrow.core.NonEmptyList
+import arrow.core.raise.catch
 import arrow.core.toNonEmptyListOrNull
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import eu.europa.ec.eudi.etsi1196x2.consultation.dss.DSSAdapter
@@ -56,7 +57,7 @@ private val log = LoggerFactory.getLogger(TrustValidatorServiceContext::class.ja
 internal class TrustValidatorServiceContext : BeanRegistrarDsl({
     registerBean { Clock.System }
 
-    registerBean<IsChainTrustedForContext<List<X509Certificate>, TrustAnchor>> {
+    registerBean {
         val config = bean<TrustValidatorConfigurationProperties>()
         val trustSources = config.trustSources
 
@@ -75,10 +76,22 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
 
         val usingKeyStore = IsChainTrustedForContext(trustSources?.keyStoreSources().orEmpty())
 
-        usingLoTL.or(usingKeyStore)
-    }
+        IsChainTrustedUseCase { chain, context ->
+            suspend fun IsChainTrustedForContext<List<X509Certificate>, TrustAnchor>.isTrusted(
+                chain: NonEmptyList<X509Certificate>,
+                context: VerificationContext,
+            ): CertificationChainValidation<TrustAnchor>? =
+                catch({ invoke(chain, context) }) {
+                    CertificationChainValidation.NotTrusted(it)
+                }
 
-    registerBean { IsChainTrustedUseCase(bean()) }
+            when (val usingLoTL = usingLoTL.isTrusted(chain, context)) {
+                is CertificationChainValidation.Trusted -> usingLoTL
+                is CertificationChainValidation.NotTrusted -> usingKeyStore.isTrusted(chain, context) ?: usingLoTL
+                null -> usingKeyStore.isTrusted(chain, context)
+            }
+        }
+    }
 
     registerBean {
         val configuration = bean<TrustValidatorConfigurationProperties>()
