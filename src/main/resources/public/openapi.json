@@ -17,7 +17,7 @@
           "trust validator"
         ],
         "description": "Check if a X509 certificate chain is trusted or not",
-        "operationId": "checkTrustV2",
+        "operationId": "checkTrust",
         "requestBody": {
           "required": true,
           "content": {
