@@ -17,7 +17,9 @@ package eu.europa.ec.eudi.trustvalidator.config
 
 import eu.europa.ec.eudi.etsi1196x2.consultation.GetTrustAnchorsForSupportedQueries
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
-import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.usingKeyStore
+import eu.europa.ec.eudi.etsi1196x2.consultation.usingKeyStore
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import org.slf4j.LoggerFactory
 import java.security.KeyStore
 import java.security.cert.TrustAnchor
@@ -81,3 +83,14 @@ private fun loadKeyStore(config: KeyStoreConfigurationProperties): KeyStore =
                 load(it, (config.password?.value ?: "").toCharArray())
             }
         }
+
+fun <CTX : Any> GetTrustAnchorsForSupportedQueries.Companion.usingKeyStore(
+    dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    keystore: KeyStore,
+    queryPerVerificationContext: Map<CTX, Regex>,
+): GetTrustAnchorsForSupportedQueries<CTX, TrustAnchor> =
+    GetTrustAnchorsForSupportedQueries.usingKeyStore(
+        dispatcher,
+        keystore,
+        queryPerVerificationContext.keys,
+    ) { checkNotNull(queryPerVerificationContext[it]) }
