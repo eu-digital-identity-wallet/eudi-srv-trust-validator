@@ -15,6 +15,7 @@
  */
 package eu.europa.ec.eudi.trustvalidator
 
+import eu.europa.ec.eudi.trustvalidator.config.TrustValidatorConfigurationProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication

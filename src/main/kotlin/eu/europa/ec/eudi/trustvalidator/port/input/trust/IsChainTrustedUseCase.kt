@@ -21,6 +21,7 @@ import arrow.core.raise.catch
 import arrow.core.raise.either
 import arrow.core.raise.ensureNotNull
 import eu.europa.ec.eudi.etsi1196x2.consultation.CertificationChainValidation
+import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContextF
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
 import eu.europa.ec.eudi.trustvalidator.adapter.out.serialization.X509CertificateChainSerializer
 import eu.europa.ec.eudi.trustvalidator.adapter.out.serialization.X509CertificateSerializer
@@ -83,15 +84,8 @@ sealed interface ErrorResponseTO {
     ) : ErrorResponseTO
 }
 
-fun interface IsChainTrusted {
-    suspend operator fun invoke(
-        chain: NonEmptyList<X509Certificate>,
-        context: VerificationContext,
-    ): CertificationChainValidation<TrustAnchor>?
-}
-
 class IsChainTrustedUseCase(
-    private val isChainTrusted: IsChainTrusted,
+    private val isChainTrusted: IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>,
 ) {
     suspend operator fun invoke(query: TrustQueryTO): Either<ErrorResponseTO, TrustResponseTO> =
         either {
