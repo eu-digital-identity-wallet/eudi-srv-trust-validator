@@ -16,27 +16,22 @@
 package eu.europa.ec.eudi.trustvalidator.adapter.out.consultation
 
 import eu.europa.ec.eudi.etsi1196x2.consultation.GetTrustAnchorsForSupportedQueries
-import eu.europa.ec.eudi.etsi1196x2.consultation.GetTrustAnchorsFromKeystore
-import eu.europa.ec.eudi.etsi1196x2.consultation.cached
-import eu.europa.ec.eudi.etsi1196x2.consultation.transform
+import eu.europa.ec.eudi.etsi1196x2.consultation.usingKeyStore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import java.security.KeyStore
 import java.security.cert.TrustAnchor
-import kotlin.time.Clock
-import kotlin.time.Duration
 
 fun <CTX : Any> GetTrustAnchorsForSupportedQueries.Companion.usingKeyStore(
-    cacheDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    clock: Clock = Clock.System,
-    ttl: Duration,
-    keyStoreDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO,
     keystore: KeyStore,
     queryPerVerificationContext: Map<CTX, Regex>,
 ): GetTrustAnchorsForSupportedQueries<CTX, TrustAnchor> =
-    GetTrustAnchorsFromKeystore(keyStoreDispatcher, keystore)
-        .cached(cacheDispatcher = cacheDispatcher, clock = clock, ttl = ttl, expectedQueries = queryPerVerificationContext.size)
-        .transform(queryPerVerificationContext)
+    GetTrustAnchorsForSupportedQueries.usingKeyStore(
+        dispatcher,
+        keystore,
+        queryPerVerificationContext.keys,
+    ) { checkNotNull(queryPerVerificationContext[it]) }
 
 fun <CTX : Any, TRUST_ANCHOR : Any> GetTrustAnchorsForSupportedQueries.Companion.empty():
     GetTrustAnchorsForSupportedQueries<CTX, TRUST_ANCHOR> = GetTrustAnchorsForSupportedQueries(emptySet()) { null }

@@ -89,8 +89,6 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
 
         if (null != keyStoreConfig && !queryPerVerificationContext.isNullOrEmpty())
             GetTrustAnchorsForSupportedQueries.usingKeyStore(
-                clock = bean(),
-                ttl = 10.minutes,
                 keystore = loadKeyStore(keyStoreConfig),
                 queryPerVerificationContext = queryPerVerificationContext,
             )
