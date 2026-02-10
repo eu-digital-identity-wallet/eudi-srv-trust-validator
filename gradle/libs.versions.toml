@@ -11,8 +11,7 @@ arrow = "2.2.1.1"
 dependencycheck = "12.1.1"
 swaggerUi = "5.31.0"
 kover = "0.9.4"
-consultation-dss = "0.1.0"
-dss = "6.4.RC1"
+consultation-dss = "0.2.2-SNAPSHOT"
 
 [libraries]
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
@@ -30,7 +29,6 @@ arrow-core = { module = "io.arrow-kt:arrow-core" }
 arrow-core-serialization = { module = "io.arrow-kt:arrow-core-serialization" }
 swagger-ui = { module = "org.webjars:swagger-ui", version.ref = "swaggerUi" }
 consultation-dss = { module = "eu.europa.ec.eudi:etsi-1196x2-consultation-dss", version.ref = "consultation-dss" }
-dss-bom = { module = "eu.europa.ec.joinup.sd-dss:dss-bom", version.ref = "dss" }
 dss-tsl-validation = { module = "eu.europa.ec.joinup.sd-dss:dss-tsl-validation" }
 dss-policy-jaxb = { module = "eu.europa.ec.joinup.sd-dss:dss-policy-jaxb" }
 dss-utils-google-guava = { module = "eu.europa.ec.joinup.sd-dss:dss-utils-google-guava" }

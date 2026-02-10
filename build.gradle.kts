@@ -14,6 +14,12 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://central.sonatype.com/repository/maven-snapshots")
+        mavenContent {
+            snapshotsOnly()
+        }
+    }
 }
 
 dependencies {
@@ -21,7 +27,6 @@ dependencies {
     implementation(platform(libs.kotlinx.serialization.bom))
     implementation(platform(libs.kotlinx.coroutines.bom))
     implementation(platform(libs.arrow.stack))
-    implementation(platform(libs.dss.bom))
     implementation(platform(libs.spring.boot.dependencies))
 
     implementation(libs.kotlin.stdlib)
