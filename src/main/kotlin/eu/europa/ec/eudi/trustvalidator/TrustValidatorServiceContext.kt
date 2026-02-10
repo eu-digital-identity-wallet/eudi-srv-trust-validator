@@ -59,7 +59,6 @@ import kotlin.time.Duration.Companion.minutes
 
 private val log = LoggerFactory.getLogger(TrustValidatorServiceContext::class.java)
 
-@OptIn(SensitiveApi::class)
 internal class TrustValidatorServiceContext : BeanRegistrarDsl({
     registerBean { Clock.System }
 
