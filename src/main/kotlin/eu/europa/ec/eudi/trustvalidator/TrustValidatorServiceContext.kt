@@ -49,24 +49,22 @@ import java.util.concurrent.Executors
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
-import eu.europa.ec.eudi.etsi1196x2.consultation.NonEmptyList as ConsultationNonEmptyList
 
 private val log = LoggerFactory.getLogger(TrustValidatorServiceContext::class.java)
 
+@OptIn(SensitiveApi::class)
 internal class TrustValidatorServiceContext : BeanRegistrarDsl({
     registerBean { Clock.System }
 
     registerBean(name = "dss-executor", infrastructure = true, autowirable = false, lazyInit = true) { Executors.newCachedThreadPool() }
 
-    registerBean(name = "validate-certificate-chain", infrastructure = true, autowirable = false) {
-        ValidateCertificateChainJvm {
-            isRevocationEnabled = false
-        }
-    }
-
     registerBean(name = "get-trust-anchors-from-lotl", infrastructure = true, autowirable = false) {
         val config = bean<TrustValidatorConfigurationProperties>()
         val queryPerVerificationContext = config.trustSources?.lotlSources()
+            ?.also {
+                it.entries.forEach { (context, lotl) -> log.info("Configured VerificationContext $context using LoTL ${lotl.url}") }
+            }
+
         if (!queryPerVerificationContext.isNullOrEmpty())
             GetTrustAnchorsForSupportedQueries.usingLoTL(
                 clock = bean(),
@@ -85,6 +83,10 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
         val config = bean<TrustValidatorConfigurationProperties>()
         val keyStoreConfig = config.trustSources?.keyStore
         val queryPerVerificationContext = config.trustSources?.keyStoreSources()
+            ?.also {
+                it.entries.forEach { (context, _) -> log.info("Configured VerificationContext $context using KeyStore") }
+            }
+
         if (null != keyStoreConfig && !queryPerVerificationContext.isNullOrEmpty())
             GetTrustAnchorsForSupportedQueries.usingKeyStore(
                 clock = bean(),
@@ -96,28 +98,19 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
     }
 
     registerBean {
-        val validateCertificateChain = bean<ValidateCertificateChainJvm>("validate-certificate-chain")
+        val validateCertificateChain = ValidateCertificateChainJvm { isRevocationEnabled = false }
         val getTrustAnchorsFromLoTL =
             bean<GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>>("get-trust-anchors-from-lotl")
         val getTrustAnchorsFromKeyStore =
             bean<GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>>("get-trust-anchors-from-keystore")
 
-        IsChainTrustedUseCase { chain, context ->
-            val trustAnchorsForContext = listOf(getTrustAnchorsFromLoTL(context), getTrustAnchorsFromKeyStore(context))
-            if (trustAnchorsForContext.all { GetTrustAnchorsForSupportedQueries.Outcome.QueryNotSupported == it }) {
-                // VerificationContext has not been configured
-                null
-            } else {
-                trustAnchorsForContext.filterIsInstance<GetTrustAnchorsForSupportedQueries.Outcome.Found<TrustAnchor>>()
-                    .flatMap { it.trustAnchors.list }
-                    .let { ConsultationNonEmptyList.nelOrNull(it) }
-                    ?.let { trustAnchors -> validateCertificateChain(chain, trustAnchors) }
-                    ?: CertificationChainValidation.NotTrusted(
-                        IllegalArgumentException("No TrustAnchors have been found for VerificationContext $context"),
-                    )
-            }
-        }
+        IsChainTrustedForEUDIW(
+            validateCertificateChain,
+            getTrustAnchorsFromLoTL,
+        ).recoverWith { getTrustAnchorsFromKeyStore }
     }
+
+    registerBean<IsChainTrustedUseCase>()
 
     registerBean {
         val configuration = bean<TrustValidatorConfigurationProperties>()
