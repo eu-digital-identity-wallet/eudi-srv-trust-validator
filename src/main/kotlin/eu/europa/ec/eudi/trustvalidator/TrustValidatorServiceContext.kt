@@ -409,11 +409,3 @@ private fun loadKeyStore(config: KeyStoreConfigurationProperties): KeyStore =
                 load(it, (config.password?.value ?: "").toCharArray())
             }
         }
-
-private fun <TRUST_ANCHOR : Any> GetTrustAnchorsForSupportedQueries.Outcome<TRUST_ANCHOR>.trustAnchors():
-    ConsultationNonEmptyList<TRUST_ANCHOR>? =
-    when (this) {
-        is GetTrustAnchorsForSupportedQueries.Outcome.Found -> trustAnchors
-        GetTrustAnchorsForSupportedQueries.Outcome.NotFound -> null
-        GetTrustAnchorsForSupportedQueries.Outcome.QueryNotSupported -> null
-    }
