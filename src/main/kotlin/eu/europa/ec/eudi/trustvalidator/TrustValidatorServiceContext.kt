@@ -16,7 +16,6 @@
 package eu.europa.ec.eudi.trustvalidator
 
 import arrow.core.NonEmptyList
-import arrow.core.raise.catch
 import arrow.core.toNonEmptyListOrNull
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import eu.europa.ec.eudi.etsi1196x2.consultation.dss.DssOptions
@@ -49,14 +48,13 @@ import java.net.URL
 import java.nio.file.Path
 import java.security.KeyStore
 import java.security.cert.TrustAnchor
-import java.security.cert.X509Certificate
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
-
+import eu.europa.ec.eudi.etsi1196x2.consultation.NonEmptyList as ConsultationNonEmptyList
 private val log = LoggerFactory.getLogger(TrustValidatorServiceContext::class.java)
 
 internal class TrustValidatorServiceContext : BeanRegistrarDsl({
@@ -64,58 +62,63 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
 
     registerBean(name = "dss-executor", infrastructure = true, autowirable = false, lazyInit = true) { Executors.newCachedThreadPool() }
 
-    registerBean(name = "validate-certificate-chain", infrastructure = true, autowirable = false, lazyInit = true) {
+    registerBean(name = "validate-certificate-chain", infrastructure = true, autowirable = false) {
         ValidateCertificateChainJvm {
             isRevocationEnabled = false
         }
     }
 
-    registerBean(name = "is-chain-trusted-for-eudiw-lotl", infrastructure = true, autowirable = false) {
+    registerBean(name = "get-trust-anchors-from-lotl", infrastructure = true, autowirable = false) {
         val config = bean<TrustValidatorConfigurationProperties>()
         val queryPerVerificationContext = config.trustSources?.lotlSources()
-        val getTrustAnchorsFromLoTL =
-            if (!queryPerVerificationContext.isNullOrEmpty())
-                GetTrustAnchorsForSupportedQueries.usingLoTL(
-                    clock = bean(),
-                    ttl = 10.minutes,
-                    dssOptions = DssOptions.usingFileCacheDataLoader(
-                        fileCacheExpiration = 24.hours,
-                        cacheDirectory = config.dss.cacheLocation,
-                        executorService = bean<ExecutorService>("dss-executor"),
-                    ),
-                    queryPerVerificationContext = queryPerVerificationContext,
-                )
-            else GetTrustAnchorsForSupportedQueries.empty()
-
-        IsChainTrustedForEUDIW(bean<ValidateCertificateChainJvm>("validate-certificate-chain"), getTrustAnchorsFromLoTL)
+        if (!queryPerVerificationContext.isNullOrEmpty())
+            GetTrustAnchorsForSupportedQueries.usingLoTL(
+                clock = bean(),
+                ttl = 10.minutes,
+                dssOptions = DssOptions.usingFileCacheDataLoader(
+                    fileCacheExpiration = 24.hours,
+                    cacheDirectory = config.dss.cacheLocation,
+                    executorService = bean<ExecutorService>("dss-executor"),
+                ),
+                queryPerVerificationContext = queryPerVerificationContext,
+            )
+        else GetTrustAnchorsForSupportedQueries.empty()
     }
 
-    registerBean(name = "is-chain-trusted-for-eudiw-keystore", infrastructure = true, autowirable = false) {
+    registerBean(name = "get-trust-anchors-from-keystore", infrastructure = true, autowirable = false) {
         val config = bean<TrustValidatorConfigurationProperties>()
         val keyStoreConfig = config.trustSources?.keyStore
         val queryPerVerificationContext = config.trustSources?.keyStoreSources()
-        val getTrustAnchorsFromKeyStore =
-            if (null != keyStoreConfig && !queryPerVerificationContext.isNullOrEmpty())
-                GetTrustAnchorsForSupportedQueries.usingKeyStore(
-                    clock = bean(),
-                    ttl = 10.minutes,
-                    keystore = loadKeyStore(keyStoreConfig),
-                    queryPerVerificationContext = queryPerVerificationContext,
-                )
-            else GetTrustAnchorsForSupportedQueries.empty()
-
-        IsChainTrustedForEUDIW(bean<ValidateCertificateChainJvm>("validate-certificate-chain"), getTrustAnchorsFromKeyStore)
+        if (null != keyStoreConfig && !queryPerVerificationContext.isNullOrEmpty())
+            GetTrustAnchorsForSupportedQueries.usingKeyStore(
+                clock = bean(),
+                ttl = 10.minutes,
+                keystore = loadKeyStore(keyStoreConfig),
+                queryPerVerificationContext = queryPerVerificationContext,
+            )
+        else GetTrustAnchorsForSupportedQueries.empty()
     }
 
     registerBean {
-        val usingLoTL = bean<IsChainTrustedForEUDIW<List<X509Certificate>, TrustAnchor>>("is-chain-trusted-for-eudiw-lotl")
-        val usingKeyStore = bean<IsChainTrustedForEUDIW<List<X509Certificate>, TrustAnchor>>("is-chain-trusted-for-eudiw-keystore")
+        val validateCertificateChain = bean<ValidateCertificateChainJvm>("validate-certificate-chain")
+        val getTrustAnchorsFromLoTL =
+            bean<GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>>("get-trust-anchors-from-lotl")
+        val getTrustAnchorsFromKeyStore =
+            bean<GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>>("get-trust-anchors-from-keystore")
 
         IsChainTrustedUseCase { chain, context ->
-            when (val lotlValidationResult = usingLoTL.isTrusted(chain, context)) {
-                is CertificationChainValidation.Trusted -> lotlValidationResult
-                is CertificationChainValidation.NotTrusted -> usingKeyStore.isTrusted(chain, context) ?: lotlValidationResult
-                null -> usingKeyStore.isTrusted(chain, context)
+            val trustAnchorsForContext = listOf(getTrustAnchorsFromLoTL(context), getTrustAnchorsFromKeyStore(context))
+            if (trustAnchorsForContext.all { GetTrustAnchorsForSupportedQueries.Outcome.QueryNotSupported == it }) {
+                // VerificationContext has not been configured
+                null
+            } else {
+                trustAnchorsForContext.filterIsInstance<GetTrustAnchorsForSupportedQueries.Outcome.Found<TrustAnchor>>()
+                    .flatMap { it.trustAnchors.list }
+                    .let { ConsultationNonEmptyList.nelOrNull(it) }
+                    ?.let { trustAnchors -> validateCertificateChain(chain, trustAnchors) }
+                    ?: CertificationChainValidation.NotTrusted(
+                        IllegalArgumentException("No TrustAnchors have been found for VerificationContext $context"),
+                    )
             }
         }
     }
@@ -384,14 +387,6 @@ private fun TrustSourcesConfigurationProperties.keyStoreSources(): Map<Verificat
         }
     }
 
-private suspend fun IsChainTrustedForEUDIW<List<X509Certificate>, TrustAnchor>.isTrusted(
-    chain: NonEmptyList<X509Certificate>,
-    context: VerificationContext,
-): CertificationChainValidation<TrustAnchor>? =
-    catch({ invoke(chain, context) }) {
-        CertificationChainValidation.NotTrusted(it)
-    }
-
 private fun <CTX : Any> GetTrustAnchorsForSupportedQueries.Companion.usingKeyStore(
     cacheDispatcher: CoroutineDispatcher = Dispatchers.Default,
     clock: Clock = Clock.System,
@@ -414,3 +409,11 @@ private fun loadKeyStore(config: KeyStoreConfigurationProperties): KeyStore =
                 load(it, (config.password?.value ?: "").toCharArray())
             }
         }
+
+private fun <TRUST_ANCHOR : Any> GetTrustAnchorsForSupportedQueries.Outcome<TRUST_ANCHOR>.trustAnchors():
+    ConsultationNonEmptyList<TRUST_ANCHOR>? =
+    when (this) {
+        is GetTrustAnchorsForSupportedQueries.Outcome.Found -> trustAnchors
+        GetTrustAnchorsForSupportedQueries.Outcome.NotFound -> null
+        GetTrustAnchorsForSupportedQueries.Outcome.QueryNotSupported -> null
+    }
