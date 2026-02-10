@@ -94,7 +94,7 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
                 keyStore.load(inputStream, (it.password?.value ?: "").toCharArray())
             }
             keyStore
-        } ?: KeyStore.getInstance(KeyStore.getDefaultType())
+        } ?: KeyStore.getInstance(KeyStore.getDefaultType()).also { it.load(null, null) }
         val getTrustAnchorsFromKeyStore = GetTrustAnchorsForSupportedQueries.usingKeyStore(
             clock = bean(),
             ttl = 10.minutes,
