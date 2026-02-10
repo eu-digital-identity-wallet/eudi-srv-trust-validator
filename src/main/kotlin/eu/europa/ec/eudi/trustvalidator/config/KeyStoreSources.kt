@@ -15,9 +15,30 @@
  */
 package eu.europa.ec.eudi.trustvalidator.config
 
+import eu.europa.ec.eudi.etsi1196x2.consultation.GetTrustAnchorsForSupportedQueries
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
+import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.usingKeyStore
+import org.slf4j.LoggerFactory
+import java.security.KeyStore
+import java.security.cert.TrustAnchor
 
-fun TrustSourcesConfigurationProperties.keyStoreSources(): Map<VerificationContext, Regex> =
+private val log = LoggerFactory.getLogger("getTrustAnchorsUsingKeyStore")
+
+fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingKeyStore():
+    GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>? =
+    keyStore?.let { keyStoreConfig ->
+        val queryPerVerificationContext = keyStoreSources()
+            .also {
+                it.keys.forEach { context -> log.info("Configured VerificationContext $context using KeyStore") }
+            }
+
+        GetTrustAnchorsForSupportedQueries.usingKeyStore(
+            keystore = loadKeyStore(keyStoreConfig),
+            queryPerVerificationContext = queryPerVerificationContext,
+        )
+    }
+
+private fun TrustSourcesConfigurationProperties.keyStoreSources(): Map<VerificationContext, Regex> =
     buildMap {
         val regex = "^.*$".toRegex()
 
@@ -52,3 +73,11 @@ fun TrustSourcesConfigurationProperties.keyStoreSources(): Map<VerificationConte
         // Wallet Relying Party Registration Certificate Providers
         put(VerificationContext.WalletRelyingPartyRegistrationCertificate, regex)
     }
+
+private fun loadKeyStore(config: KeyStoreConfigurationProperties): KeyStore =
+    KeyStore.getInstance(config.keyStoreType)
+        .apply {
+            config.location.inputStream.use {
+                load(it, (config.password?.value ?: "").toCharArray())
+            }
+        }
