@@ -84,7 +84,7 @@ private fun loadKeyStore(config: KeyStoreConfigurationProperties): KeyStore =
             }
         }
 
-fun <CTX : Any> GetTrustAnchorsForSupportedQueries.Companion.usingKeyStore(
+private fun <CTX : Any> GetTrustAnchorsForSupportedQueries.Companion.usingKeyStore(
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
     keystore: KeyStore,
     queryPerVerificationContext: Map<CTX, Regex>,
