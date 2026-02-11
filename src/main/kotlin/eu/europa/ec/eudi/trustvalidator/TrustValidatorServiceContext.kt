@@ -17,17 +17,16 @@ package eu.europa.ec.eudi.trustvalidator
 
 import arrow.core.NonEmptyList
 import arrow.core.toNonEmptyListOrNull
-import eu.europa.ec.eudi.etsi1196x2.consultation.GetTrustAnchorsForSupportedQueries
-import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForEUDIW
-import eu.europa.ec.eudi.etsi1196x2.consultation.SensitiveApi
-import eu.europa.ec.eudi.etsi1196x2.consultation.ValidateCertificateChainJvm
+import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
 import eu.europa.ec.eudi.trustvalidator.config.TrustValidatorConfigurationProperties
 import eu.europa.ec.eudi.trustvalidator.config.getTrustAnchorsUsingKeyStore
 import eu.europa.ec.eudi.trustvalidator.config.getTrustAnchorsUsingLoTL
+import eu.europa.ec.eudi.trustvalidator.config.lotlSources
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
+import eu.europa.esig.dss.tsl.source.LOTLSource
 import kotlinx.serialization.json.Json
 import org.springframework.beans.factory.BeanRegistrarDsl
 import org.springframework.boot.http.codec.CodecCustomizer
@@ -39,6 +38,7 @@ import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.config.web.server.invoke
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.reactive.CorsConfigurationSource
+import java.security.cert.TrustAnchor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.time.Clock
@@ -47,15 +47,24 @@ import kotlin.time.Clock
 internal class TrustValidatorServiceContext : BeanRegistrarDsl({
     registerBean { Clock.System }
 
-    registerBean(name = "dss-executor", infrastructure = true, autowirable = false) { Executors.newCachedThreadPool() }
+    registerBean(name = "dss-executor", infrastructure = true, autowirable = false, lazyInit = true) { Executors.newCachedThreadPool() }
+
+    registerBean(name = "get-trust-anchors-using-lotl", infrastructure = true, autowirable = false) {
+        val config = bean<TrustValidatorConfigurationProperties>()
+        config.trustSources?.getTrustAnchorsUsingLoTL(
+            clock = bean(),
+            cacheDirectory = config.dss.cacheLocation,
+            getExecutorService = { bean<ExecutorService>("dss-executor") },
+        ) ?: GetTrustAnchors { null }
+    }
 
     registerBean {
         val config = bean<TrustValidatorConfigurationProperties>()
-        val getTrustAnchorsFromLoTL = config.trustSources?.getTrustAnchorsUsingLoTL(
-            bean(),
-            config.dss.cacheLocation,
-            bean<ExecutorService>("dss-executor"),
-        ) ?: GetTrustAnchorsForSupportedQueries.empty()
+        val getTrustAnchorsFromLoTL = run {
+            val getTrustAnchorsFromLoTL = bean<GetTrustAnchors<LOTLSource, TrustAnchor>>("get-trust-anchors-using-lotl")
+            val lotlSources = config.trustSources?.lotlSources() ?: emptyMap()
+            GetTrustAnchorsForSupportedQueries.transform(getTrustAnchorsFromLoTL, lotlSources)
+        }
         val getTrustAnchorsFromKeyStore = config.trustSources?.getTrustAnchorsUsingKeyStore() ?: GetTrustAnchorsForSupportedQueries.empty()
         val validateCertificateChain = ValidateCertificateChainJvm { isRevocationEnabled = false }
 

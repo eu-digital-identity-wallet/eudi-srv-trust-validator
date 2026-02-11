@@ -15,10 +15,11 @@
  */
 package eu.europa.ec.eudi.trustvalidator.config
 
-import eu.europa.ec.eudi.etsi1196x2.consultation.GetTrustAnchorsForSupportedQueries
+import eu.europa.ec.eudi.etsi1196x2.consultation.GetTrustAnchors
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
+import eu.europa.ec.eudi.etsi1196x2.consultation.cached
 import eu.europa.ec.eudi.etsi1196x2.consultation.dss.DssOptions
-import eu.europa.ec.eudi.etsi1196x2.consultation.dss.usingLoTL
+import eu.europa.ec.eudi.etsi1196x2.consultation.dss.GetTrustAnchorsFromLoTL
 import eu.europa.esig.dss.spi.x509.KeyStoreCertificateSource
 import eu.europa.esig.dss.tsl.function.GrantedOrRecognizedAtNationalLevelTrustAnchorPeriodPredicate
 import eu.europa.esig.dss.tsl.source.LOTLSource
@@ -37,27 +38,24 @@ private val log = LoggerFactory.getLogger("getTrustAnchorsUsingLoTL")
 fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingLoTL(
     clock: Clock,
     cacheDirectory: Path,
-    executorService: ExecutorService,
-): GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>? =
+    getExecutorService: () -> ExecutorService,
+): GetTrustAnchors<LOTLSource, TrustAnchor>? =
     lotlSources().takeIf { it.isNotEmpty() }
         ?.let { queryPerVerificationContext ->
             queryPerVerificationContext.entries.forEach { (context, lotl) ->
                 log.info("Configured VerificationContext $context using LoTL ${lotl.url}")
             }
 
-            GetTrustAnchorsForSupportedQueries.usingLoTL(
-                clock = clock,
-                ttl = 10.minutes,
-                dssOptions = DssOptions.usingFileCacheDataLoader(
+            GetTrustAnchorsFromLoTL(
+                DssOptions.usingFileCacheDataLoader(
                     fileCacheExpiration = 24.hours,
                     cacheDirectory = cacheDirectory,
-                    executorService = executorService,
+                    executorService = getExecutorService(),
                 ),
-                queryPerVerificationContext = queryPerVerificationContext,
-            )
+            ).cached(clock = clock, ttl = 10.minutes, expectedQueries = queryPerVerificationContext.size)
         }
 
-private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationContext, LOTLSource> =
+fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationContext, LOTLSource> =
     buildMap {
         // Wallet Providers
         if (null != walletProviders) {
