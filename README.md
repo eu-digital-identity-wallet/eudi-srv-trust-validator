@@ -23,7 +23,8 @@ based on [eudi-lib-kmp-etsi-1196x2](https://github.com/eu-digital-identity-walle
 Currently, the following sources for Trust Anchors are supported:
 
 1. Lists of Trusted Lists (LoTLs), based on [ETSI TS 119 612](https://www.etsi.org/deliver/etsi_ts/119600_119699/119612/02.04.01_60/ts_119612v020401p.pdf)
-2. Java KeyStores
+2. Lists of Trusted Entities (LoTEs), based on [ETSI TS 119 602](https://www.etsi.org/deliver/etsi_ts/119600_119699/119602/01.01.01_60/ts_119602v010101p.pdf)
+3. Java KeyStores
 
 ## Disclaimer
 
@@ -97,6 +98,18 @@ Default value: `3600`
 Variable: `TRUST_VALIDATOR_DSS_CACHE_LOCATION`  
 Description: Path to the directory where DSS will cache LoTLs
 
+> [!IMPORTANT]
+> 
+> Each Trust Source can be configured to use Trust Anchors either:
+> 
+> 1. from a LoTL
+> 2. from a LoTE
+> 3. from both a LoTL and a LoTE
+
+> [!CAUTION]
+> 
+> Signature verification for LoTEs is currently not implemented.
+
 ### Trust Sources – Wallet Providers
 
 #### LoTL Configuration
@@ -118,6 +131,17 @@ Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WALLET_PROVIDERS_LOTL_ISSUANCE_SERVICE`
 Description: Service Type Identifier of the Issuance Service, must be a valid URI  
 
 Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WALLET_PROVIDERS_LOTL_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
+#### LoTE Configuration
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WALLET_PROVIDERS_LOTE_LOCATION`  
+Description: URL of the LoTE from which to load Trust Anchors for Wallet Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WALLET_PROVIDERS_LOTE_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WALLET_PROVIDERS_LOTE_REVOCATION_SERVICE`  
 Description: Service Type Identifier of the Revocation Service, must be a valid URI
 
 ### Trust Sources – PID Providers
@@ -143,6 +167,17 @@ Description: Service Type Identifier of the Issuance Service, must be a valid UR
 Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PID_PROVIDERS_LOTL_REVOCATION_SERVICE`  
 Description: Service Type Identifier of the Revocation Service, must be a valid URI
 
+#### LoTE Configuration
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PID_PROVIDERS_LOTE_LOCATION`  
+Description: URL of the LoTE from which to load Trust Anchors for PID Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PID_PROVIDERS_LOTE_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PID_PROVIDERS_LOTE_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
 ### Trust Sources – QEAA Providers
 
 #### LoTL Configuration
@@ -166,6 +201,17 @@ Description: Service Type Identifier of the Issuance Service, must be a valid UR
 Variable: `TRUST_VALIDATOR_TRUST_SOURCES_QEAA_PROVIDERS_LOTL_REVOCATION_SERVICE`  
 Description: Service Type Identifier of the Revocation Service, must be a valid URI
 
+#### LoTE Configuration
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_QEAA_PROVIDERS_LOTE_LOCATION`  
+Description: URL of the LoTE from which to load Trust Anchors for QEAA Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_QEAA_PROVIDERS_LOTE_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_QEAA_PROVIDERS_LOTE_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
 ### Trust Sources – PubEAA Providers
 
 #### LoTL Configuration
@@ -187,6 +233,17 @@ Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PUB_EAA_PROVIDERS_LOTL_ISSUANCE_SERVICE
 Description: Service Type Identifier of the Issuance Service, must be a valid URI
 
 Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PUB_EAA_PROVIDERS_LOTL_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
+#### LoTE Configuration
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PUB_EAA_PROVIDERS_LOTE_LOCATION`  
+Description: URL of the LoTE from which to load Trust Anchors for PubEAA Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PUB_EAA_PROVIDERS_LOTE_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_PUB_EAA_PROVIDERS_LOTE_REVOCATION_SERVICE`  
 Description: Service Type Identifier of the Revocation Service, must be a valid URI
 
 ### Trust Sources – EAA Providers
@@ -222,6 +279,17 @@ Description: Service Type Identifier of the Issuance Service, must be a valid UR
 Variable: `TRUST_VALIDATOR_TRUST_SOURCES_EAA_PROVIDERS_XXX_LOTL_REVOCATION_SERVICE`  
 Description: Service Type Identifier of the Revocation Service, must be a valid URI
 
+#### LoTE Configuration
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_EAA_PROVIDERS_XXX_LOTE_LOCATION`  
+Description: URL of the LoTE from which to load Trust Anchors for the current EAA Provider
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_EAA_PROVIDERS_XXX_LOTE_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_EAA_PROVIDERS_XXX_LOTE_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
 ### Trust Sources – Wallet Relying Party Access Certificate Providers
 
 #### LoTL Configuration
@@ -245,6 +313,17 @@ Description: Service Type Identifier of the Issuance Service, must be a valid UR
 Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPAC_PROVIDERS_LOTL_REVOCATION_SERVICE`  
 Description: Service Type Identifier of the Revocation Service, must be a valid URI
 
+#### LoTE Configuration
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPAC_PROVIDERS_LOTE_LOCATION`  
+Description: URL of the LoTE from which to load Trust Anchors for Wallet Relying Party Access Certificate Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPAC_PROVIDERS_LOTE_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPAC_PROVIDERS_LOTE_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
 ### Trust Sources – Wallet Relying Party Registration Certificate Providers
 
 #### LoTL Configuration
@@ -266,6 +345,17 @@ Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPRC_PROVIDERS_LOTL_ISSUANCE_SERVICE`
 Description: Service Type Identifier of the Issuance Service, must be a valid URI
 
 Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPRC_PROVIDERS_LOTL_REVOCATION_SERVICE`  
+Description: Service Type Identifier of the Revocation Service, must be a valid URI
+
+#### LoTE Configuration
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPRC_PROVIDERS_LOTE_LOCATION`  
+Description: URL of the LoTE from which to load Trust Anchors for Wallet Relying Party Registration Certificate Providers
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPRC_PROVIDERS_LOTE_ISSUANCE_SERVICE`  
+Description: Service Type Identifier of the Issuance Service, must be a valid URI
+
+Variable: `TRUST_VALIDATOR_TRUST_SOURCES_WRPRC_PROVIDERS_LOTE_REVOCATION_SERVICE`  
 Description: Service Type Identifier of the Revocation Service, must be a valid URI
 
 ### Trust Sources – Java KeyStore
