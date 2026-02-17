@@ -44,11 +44,18 @@ data class TrustSourcesConfigurationProperties(
 
 data class TrustedListsConfigurationProperties(
     val lotl: LoTLConfigurationProperties? = null,
+    val lote: LoTEConfigurationProperties? = null,
 )
 
 data class LoTLConfigurationProperties(
     val location: URL,
     val signatureVerification: KeyStoreConfigurationProperties? = null,
+    val issuanceService: URI,
+    val revocationService: URI,
+)
+
+data class LoTEConfigurationProperties(
+    val location: URL,
     val issuanceService: URI,
     val revocationService: URI,
 )
@@ -73,4 +80,5 @@ value class Password(val value: String) {
 data class EAALoTLConfigurationProperties(
     val useCase: String,
     val lotl: LoTLConfigurationProperties? = null,
+    val lote: LoTEConfigurationProperties? = null,
 )

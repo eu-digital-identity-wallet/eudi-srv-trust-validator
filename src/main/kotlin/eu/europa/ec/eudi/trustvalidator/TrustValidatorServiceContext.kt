@@ -20,13 +20,20 @@ import arrow.core.toNonEmptyListOrNull
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
+import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.or
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
 import eu.europa.ec.eudi.trustvalidator.config.TrustValidatorConfigurationProperties
 import eu.europa.ec.eudi.trustvalidator.config.getTrustAnchorsUsingKeyStore
+import eu.europa.ec.eudi.trustvalidator.config.getTrustAnchorsUsingLoTE
 import eu.europa.ec.eudi.trustvalidator.config.getTrustAnchorsUsingLoTL
 import eu.europa.ec.eudi.trustvalidator.config.lotlSources
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import eu.europa.esig.dss.tsl.source.LOTLSource
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.springframework.beans.factory.BeanRegistrarDsl
 import org.springframework.boot.http.codec.CodecCustomizer
@@ -58,6 +65,27 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
         ) ?: GetTrustAnchors { null }
     }
 
+    registerBean(infrastructure = true, lazyInit = true) {
+        HttpClient(CIO) {
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        encodeDefaults = false
+                        explicitNulls = false
+                    },
+                )
+            }
+        }
+    }
+
+    registerBean(name = "get-trust-anchors-using-lote", infrastructure = true, autowirable = false) {
+        val config = bean<TrustValidatorConfigurationProperties>()
+        runBlocking {
+            config.trustSources?.getTrustAnchorsUsingLoTE { bean() }
+        } ?: GetTrustAnchorsForSupportedQueries.empty()
+    }
+
     registerBean {
         val config = bean<TrustValidatorConfigurationProperties>()
         val getTrustAnchorsFromLoTL = run {
@@ -65,12 +93,14 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
             val lotlSources = config.trustSources?.lotlSources() ?: emptyMap()
             GetTrustAnchorsForSupportedQueries.transform(getTrustAnchorsFromLoTL, lotlSources)
         }
+        val getTrustAnchorsFromLoTE =
+            bean<GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>>("get-trust-anchors-using-lote")
         val getTrustAnchorsFromKeyStore = config.trustSources?.getTrustAnchorsUsingKeyStore() ?: GetTrustAnchorsForSupportedQueries.empty()
         val validateCertificateChain = ValidateCertificateChainJvm { isRevocationEnabled = false }
 
         IsChainTrustedForEUDIW(
             validateCertificateChain,
-            getTrustAnchorsFromLoTL,
+            getTrustAnchorsFromLoTL or getTrustAnchorsFromLoTE,
         ).recoverWith { getTrustAnchorsFromKeyStore }
     }
 

@@ -27,6 +27,7 @@ dependencies {
     implementation(platform(libs.kotlinx.serialization.bom))
     implementation(platform(libs.kotlinx.coroutines.bom))
     implementation(platform(libs.arrow.stack))
+    implementation(platform(libs.ktor.bom))
     implementation(platform(libs.spring.boot.dependencies))
 
     implementation(libs.kotlin.stdlib)
@@ -38,10 +39,15 @@ dependencies {
     implementation(libs.arrow.core)
     implementation(libs.arrow.core.serialization)
 
-    implementation(libs.consultation.dss)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+    implementation(libs.consultation.lotl)
     implementation(libs.dss.tsl.validation)
     implementation(libs.dss.policy.jaxb)
     implementation(libs.dss.utils.google.guava)
+    implementation(libs.consultation.lote)
 
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.spring.boot.starter.security)
