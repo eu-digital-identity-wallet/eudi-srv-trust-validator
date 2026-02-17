@@ -32,14 +32,18 @@ data class DSSConfigurationProperties(
 )
 
 data class TrustSourcesConfigurationProperties(
-    val walletProviders: LoTLConfigurationProperties? = null,
-    val pidProviders: LoTLConfigurationProperties? = null,
-    val qeaaProviders: LoTLConfigurationProperties? = null,
-    val pubEaaProviders: LoTLConfigurationProperties? = null,
+    val walletProviders: TrustedListsConfigurationProperties? = null,
+    val pidProviders: TrustedListsConfigurationProperties? = null,
+    val qeaaProviders: TrustedListsConfigurationProperties? = null,
+    val pubEaaProviders: TrustedListsConfigurationProperties? = null,
     val eaaProviders: List<EAALoTLConfigurationProperties>? = null,
-    val wrpacProviders: LoTLConfigurationProperties? = null,
-    val wrprcProviders: LoTLConfigurationProperties? = null,
+    val wrpacProviders: TrustedListsConfigurationProperties? = null,
+    val wrprcProviders: TrustedListsConfigurationProperties? = null,
     val keyStore: KeyStoreConfigurationProperties? = null,
+)
+
+data class TrustedListsConfigurationProperties(
+    val lotl: LoTLConfigurationProperties? = null,
 )
 
 data class LoTLConfigurationProperties(
@@ -68,5 +72,5 @@ value class Password(val value: String) {
 
 data class EAALoTLConfigurationProperties(
     val useCase: String,
-    val lotl: LoTLConfigurationProperties,
+    val lotl: LoTLConfigurationProperties? = null,
 )
