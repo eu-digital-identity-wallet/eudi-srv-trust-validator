@@ -15,7 +15,9 @@
  */
 package eu.europa.ec.eudi.trustvalidator.config
 
+import arrow.core.raise.catch
 import eu.europa.ec.eudi.etsi119602.URI
+import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTE
 import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTEAndPointers
 import eu.europa.ec.eudi.etsi119602.consultation.ProvisionTrustAnchorsFromLoTEs
 import eu.europa.ec.eudi.etsi119602.consultation.VerifyJwtSignature
@@ -43,17 +45,20 @@ suspend fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingLoTE(
         val httpClient = getHttpClient()
         val provisionTrustAnchorsFromLOTE = run {
             val params = LoadLoTEAndPointers(
-                LoadLoTEAndPointers.Constraints(
+                constraints = LoadLoTEAndPointers.Constraints(
                     otherLoTEParallelism = 4,
                     maxDepth = Int.MAX_VALUE,
                     maxLists = Int.MAX_VALUE,
                 ),
-                { VerifyJwtSignature.Outcome.Verified(it) },
-                {
-                    httpClient.get {
-                        url(it)
-                        expectSuccess = true
-                    }.bodyAsText()
+                verifyJwtSignature = { VerifyJwtSignature.Outcome.Verified(it) },
+                loadLoTE = { uri ->
+                    catch({
+                        val lote = httpClient.get {
+                            url(uri)
+                            expectSuccess = true
+                        }.bodyAsText()
+                        LoadLoTE.Outcome.Loaded(lote)
+                    }) { error -> LoadLoTE.Outcome.NotFound(error) }
                 },
             )
             ProvisionTrustAnchorsFromLoTEs(params, services)
