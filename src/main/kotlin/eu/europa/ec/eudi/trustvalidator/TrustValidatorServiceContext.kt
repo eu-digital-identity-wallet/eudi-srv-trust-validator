@@ -52,23 +52,18 @@ import kotlin.time.Clock
 internal class TrustValidatorServiceContext : BeanRegistrarDsl({
     registerBean { Clock.System }
 
-    registerBean(
-        name = "dss-executor",
-        infrastructure = true,
-        autowirable = false,
-        lazyInit = true,
-    ) { Executors.newCachedThreadPool() }
+    registerBean(name = "dss-executor", infrastructure = true, autowirable = false) { Executors.newCachedThreadPool() }
 
     registerBean(name = "get-trust-anchors-using-lotl", infrastructure = true, autowirable = false) {
         val config = bean<TrustValidatorConfigurationProperties>()
         config.trustSources?.getTrustAnchorsUsingLoTL(
             clock = bean(),
             cacheDirectory = config.dss.cacheLocation,
-            getExecutorService = { bean<ExecutorService>("dss-executor") },
+            executorService = bean<ExecutorService>("dss-executor"),
         ) ?: GetTrustAnchors { null }
     }
 
-    registerBean(infrastructure = true, lazyInit = true) {
+    registerBean(infrastructure = true) {
         HttpClient(CIO) {
             install(ContentNegotiation) {
                 json(
@@ -89,10 +84,9 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
             maxDepth = 1,
             maxLists = 50,
         )
-        val httpClient = bean<HttpClient>()
         runBlocking {
             config.trustSources?.getTrustAnchorsUsingLoTE(
-                httpClient = httpClient,
+                httpClient = bean(),
                 continueOnProblem = ContinueOnProblem.Never,
                 constraints = constraints,
             )

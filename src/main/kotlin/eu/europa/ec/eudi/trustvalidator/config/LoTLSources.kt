@@ -38,7 +38,7 @@ private val log = LoggerFactory.getLogger("getTrustAnchorsUsingLoTL")
 fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingLoTL(
     clock: Clock,
     cacheDirectory: Path,
-    getExecutorService: () -> ExecutorService,
+    executorService: ExecutorService,
 ): GetTrustAnchors<LOTLSource, TrustAnchor>? =
     lotlSources().takeIf { it.isNotEmpty() }
         ?.let { queryPerVerificationContext ->
@@ -50,7 +50,7 @@ fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingLoTL(
                 DssOptions.usingFileCacheDataLoader(
                     fileCacheExpiration = 24.hours,
                     cacheDirectory = cacheDirectory,
-                    executorService = getExecutorService(),
+                    executorService = executorService,
                 ),
             ).cached(clock = clock, ttl = 10.minutes, expectedQueries = queryPerVerificationContext.size)
         }

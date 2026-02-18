@@ -16,13 +16,8 @@
 package eu.europa.ec.eudi.trustvalidator.config
 
 import arrow.core.raise.catch
-import eu.europa.ec.eudi.etsi119602.PKIObject
 import eu.europa.ec.eudi.etsi119602.URI
-import eu.europa.ec.eudi.etsi119602.consultation.ContinueOnProblem
-import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTE
-import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTEAndPointers
-import eu.europa.ec.eudi.etsi119602.consultation.ProvisionTrustAnchorsFromLoTEs
-import eu.europa.ec.eudi.etsi119602.consultation.VerifyJwtSignature
+import eu.europa.ec.eudi.etsi119602.consultation.*
 import eu.europa.ec.eudi.etsi119602.x509Certificate
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import io.ktor.client.*
@@ -59,13 +54,12 @@ suspend fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingLoTE(
                     }) { error -> LoadLoTE.Outcome.NotFound(error) }
                 },
             )
-            fun PKIObject.trustAnchor(): TrustAnchor = TrustAnchor(x509Certificate(), null)
 
             ProvisionTrustAnchorsFromLoTEs(
                 loadLoteAndPointers,
                 services,
                 continueOnProblem = continueOnProblem,
-                createTrustAnchor = PKIObject::trustAnchor,
+                createTrustAnchor = { TrustAnchor(it.x509Certificate(), null) },
             )
         }
 
