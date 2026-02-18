@@ -20,7 +20,7 @@ import arrow.core.toNonEmptyListOrNull
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
-import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.or
+import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.and
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
 import eu.europa.ec.eudi.trustvalidator.config.TrustValidatorConfigurationProperties
 import eu.europa.ec.eudi.trustvalidator.config.getTrustAnchorsUsingKeyStore
@@ -100,7 +100,7 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
 
         IsChainTrustedForEUDIW(
             validateCertificateChain,
-            getTrustAnchorsFromLoTL or getTrustAnchorsFromLoTE,
+            getTrustAnchorsFromLoTL and getTrustAnchorsFromLoTE,
         ).recoverWith { getTrustAnchorsFromKeyStore }
     }
 

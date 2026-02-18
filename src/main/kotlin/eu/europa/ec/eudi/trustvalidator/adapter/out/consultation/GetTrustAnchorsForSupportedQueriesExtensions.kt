@@ -21,8 +21,11 @@ import eu.europa.ec.eudi.etsi1196x2.consultation.GetTrustAnchorsForSupportedQuer
 import eu.europa.ec.eudi.etsi1196x2.consultation.NonEmptyList
 import eu.europa.ec.eudi.etsi1196x2.consultation.SensitiveApi
 
+/**
+ * Gets a new [GetTrustAnchorsForSupportedQueries] that queries both [this] and [other] for a given [CONTEXT].
+ */
 @SensitiveApi
-infix fun <CONTEXT : Any, TRUST_ANCHOR : Any> GetTrustAnchorsForSupportedQueries<CONTEXT, TRUST_ANCHOR>.or(
+infix fun <CONTEXT : Any, TRUST_ANCHOR : Any> GetTrustAnchorsForSupportedQueries<CONTEXT, TRUST_ANCHOR>.and(
     other: GetTrustAnchorsForSupportedQueries<CONTEXT, TRUST_ANCHOR>,
 ): GetTrustAnchorsForSupportedQueries<CONTEXT, TRUST_ANCHOR> {
     val getTrustAnchors: GetTrustAnchors<CONTEXT, TRUST_ANCHOR> = {
