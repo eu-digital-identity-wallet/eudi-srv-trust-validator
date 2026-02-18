@@ -30,7 +30,7 @@ arrow-core = { module = "io.arrow-kt:arrow-core" }
 arrow-core-serialization = { module = "io.arrow-kt:arrow-core-serialization" }
 swagger-ui = { module = "org.webjars:swagger-ui", version.ref = "swaggerUi" }
 consultation-lotl = { module = "eu.europa.ec.eudi:etsi-1196x2-consultation-dss", version.ref = "consultation" }
-consultation-lote = { module = "eu.europa.ec.eudi:etsi-119602-eu-profiles", version.ref = "consultation" }
+consultation-lote = { module = "eu.europa.ec.eudi:etsi-119602-consultation", version.ref = "consultation" }
 dss-tsl-validation = { module = "eu.europa.ec.joinup.sd-dss:dss-tsl-validation" }
 dss-policy-jaxb = { module = "eu.europa.ec.joinup.sd-dss:dss-policy-jaxb" }
 dss-utils-google-guava = { module = "eu.europa.ec.joinup.sd-dss:dss-utils-google-guava" }

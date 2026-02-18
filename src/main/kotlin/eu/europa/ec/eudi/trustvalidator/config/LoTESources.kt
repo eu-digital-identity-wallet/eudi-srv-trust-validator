@@ -16,7 +16,9 @@
 package eu.europa.ec.eudi.trustvalidator.config
 
 import arrow.core.raise.catch
+import eu.europa.ec.eudi.etsi119602.PKIObject
 import eu.europa.ec.eudi.etsi119602.URI
+import eu.europa.ec.eudi.etsi119602.consultation.ContinueOnProblem
 import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTE
 import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTEAndPointers
 import eu.europa.ec.eudi.etsi119602.consultation.ProvisionTrustAnchorsFromLoTEs
@@ -37,19 +39,15 @@ private typealias LoteLocations = SupportedLists<URI>
 private typealias LoteServices = SupportedLists<Map<VerificationContext, URI>>
 
 suspend fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingLoTE(
-    getHttpClient: () -> HttpClient,
+    httpClient: HttpClient,
+    continueOnProblem: ContinueOnProblem = ContinueOnProblem.Never,
+    constraints: LoadLoTEAndPointers.Constraints,
 ): GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>? =
     loteSources()?.let { (locations, services) ->
         log.info(locations)
-
-        val httpClient = getHttpClient()
         val provisionTrustAnchorsFromLOTE = run {
-            val params = LoadLoTEAndPointers(
-                constraints = LoadLoTEAndPointers.Constraints(
-                    otherLoTEParallelism = 4,
-                    maxDepth = Int.MAX_VALUE,
-                    maxLists = Int.MAX_VALUE,
-                ),
+            val loadLoteAndPointers = LoadLoTEAndPointers(
+                constraints = constraints,
                 verifyJwtSignature = { VerifyJwtSignature.Outcome.Verified(it) },
                 loadLoTE = { uri ->
                     catch({
@@ -61,11 +59,18 @@ suspend fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingLoTE(
                     }) { error -> LoadLoTE.Outcome.NotFound(error) }
                 },
             )
-            ProvisionTrustAnchorsFromLoTEs(params, services)
+            fun PKIObject.trustAnchor(): TrustAnchor = TrustAnchor(x509Certificate(), null)
+
+            ProvisionTrustAnchorsFromLoTEs(
+                loadLoteAndPointers,
+                services,
+                continueOnProblem = continueOnProblem,
+                createTrustAnchor = PKIObject::trustAnchor,
+            )
         }
 
         provisionTrustAnchorsFromLOTE(locations, 4)
-    }?.map { TrustAnchor(it.x509Certificate(), null) }
+    }
 
 private fun TrustSourcesConfigurationProperties.loteSources(): Pair<LoteLocations, LoteServices>? {
     val loteLocations = loteLocations()
@@ -143,21 +148,6 @@ private fun SupportedLists<*>.isEmpty(): Boolean =
         null == pubEaaProviders &&
         null == qeaProviders &&
         eaaProviders.isEmpty()
-
-private fun <CONTEXT : Any, TRUST_ANCHOR : Any, NEW_TRUST_ANCHOR : Any> GetTrustAnchorsForSupportedQueries<CONTEXT, TRUST_ANCHOR>.map(
-    mapTrustAnchor: (TRUST_ANCHOR) -> NEW_TRUST_ANCHOR,
-): GetTrustAnchorsForSupportedQueries<CONTEXT, NEW_TRUST_ANCHOR> {
-    val getTrustAnchors = GetTrustAnchors<CONTEXT, NEW_TRUST_ANCHOR> {
-        when (val outcome = this@map.invoke(it)) {
-            is GetTrustAnchorsForSupportedQueries.Outcome.Found<TRUST_ANCHOR> ->
-                NonEmptyList(outcome.trustAnchors.list.map(mapTrustAnchor))
-            GetTrustAnchorsForSupportedQueries.Outcome.NotFound -> null
-            GetTrustAnchorsForSupportedQueries.Outcome.QueryNotSupported -> null
-        }
-    }
-
-    return GetTrustAnchorsForSupportedQueries(supportedQueries, getTrustAnchors)
-}
 
 private fun Logger.info(locations: LoteLocations) {
     fun info(context: VerificationContext, location: String) {

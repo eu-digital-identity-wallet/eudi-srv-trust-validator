@@ -17,22 +17,20 @@ package eu.europa.ec.eudi.trustvalidator
 
 import arrow.core.NonEmptyList
 import arrow.core.toNonEmptyListOrNull
+import eu.europa.ec.eudi.etsi119602.consultation.ContinueOnProblem
+import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTEAndPointers
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
 import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.and
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
-import eu.europa.ec.eudi.trustvalidator.config.TrustValidatorConfigurationProperties
-import eu.europa.ec.eudi.trustvalidator.config.getTrustAnchorsUsingKeyStore
-import eu.europa.ec.eudi.trustvalidator.config.getTrustAnchorsUsingLoTE
-import eu.europa.ec.eudi.trustvalidator.config.getTrustAnchorsUsingLoTL
-import eu.europa.ec.eudi.trustvalidator.config.lotlSources
+import eu.europa.ec.eudi.trustvalidator.config.*
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import eu.europa.esig.dss.tsl.source.LOTLSource
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.serialization.kotlinx.json.json
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.springframework.beans.factory.BeanRegistrarDsl
@@ -54,7 +52,12 @@ import kotlin.time.Clock
 internal class TrustValidatorServiceContext : BeanRegistrarDsl({
     registerBean { Clock.System }
 
-    registerBean(name = "dss-executor", infrastructure = true, autowirable = false, lazyInit = true) { Executors.newCachedThreadPool() }
+    registerBean(
+        name = "dss-executor",
+        infrastructure = true,
+        autowirable = false,
+        lazyInit = true,
+    ) { Executors.newCachedThreadPool() }
 
     registerBean(name = "get-trust-anchors-using-lotl", infrastructure = true, autowirable = false) {
         val config = bean<TrustValidatorConfigurationProperties>()
@@ -81,8 +84,18 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
 
     registerBean(name = "get-trust-anchors-using-lote", infrastructure = true, autowirable = false) {
         val config = bean<TrustValidatorConfigurationProperties>()
+        val constraints = LoadLoTEAndPointers.Constraints(
+            otherLoTEParallelism = 2,
+            maxDepth = 1,
+            maxLists = 50,
+        )
+        val httpClient = bean<HttpClient>()
         runBlocking {
-            config.trustSources?.getTrustAnchorsUsingLoTE { bean() }
+            config.trustSources?.getTrustAnchorsUsingLoTE(
+                httpClient = httpClient,
+                continueOnProblem = ContinueOnProblem.Never,
+                constraints = constraints,
+            )
         } ?: GetTrustAnchorsForSupportedQueries.empty()
     }
 
@@ -95,7 +108,8 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
         }
         val getTrustAnchorsFromLoTE =
             bean<GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>>("get-trust-anchors-using-lote")
-        val getTrustAnchorsFromKeyStore = config.trustSources?.getTrustAnchorsUsingKeyStore() ?: GetTrustAnchorsForSupportedQueries.empty()
+        val getTrustAnchorsFromKeyStore =
+            config.trustSources?.getTrustAnchorsUsingKeyStore() ?: GetTrustAnchorsForSupportedQueries.empty()
         val validateCertificateChain = ValidateCertificateChainJvm { isRevocationEnabled = false }
 
         IsChainTrustedForEUDIW(
