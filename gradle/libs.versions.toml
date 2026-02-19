@@ -11,7 +11,8 @@ arrow = "2.2.1.1"
 dependencycheck = "12.1.1"
 swaggerUi = "5.31.0"
 kover = "0.9.4"
-consultation-dss = "0.2.2"
+consultation = "0.3.0-alpha.1-SNAPSHOT"
+ktor = "3.4.0"
 bootstrap = "5.3.3"
 
 [libraries]
@@ -29,7 +30,8 @@ arrow-stack = { module = "io.arrow-kt:arrow-stack", version.ref = "arrow" }
 arrow-core = { module = "io.arrow-kt:arrow-core" }
 arrow-core-serialization = { module = "io.arrow-kt:arrow-core-serialization" }
 swagger-ui = { module = "org.webjars:swagger-ui", version.ref = "swaggerUi" }
-consultation-dss = { module = "eu.europa.ec.eudi:etsi-1196x2-consultation-dss", version.ref = "consultation-dss" }
+consultation-lotl = { module = "eu.europa.ec.eudi:etsi-1196x2-consultation-dss", version.ref = "consultation" }
+consultation-lote = { module = "eu.europa.ec.eudi:etsi-119602-consultation", version.ref = "consultation" }
 dss-tsl-validation = { module = "eu.europa.ec.joinup.sd-dss:dss-tsl-validation" }
 dss-policy-jaxb = { module = "eu.europa.ec.joinup.sd-dss:dss-policy-jaxb" }
 dss-utils-google-guava = { module = "eu.europa.ec.joinup.sd-dss:dss-utils-google-guava" }
@@ -39,9 +41,12 @@ spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-
 spring-boot-starter-thymeleaf = { module = "org.springframework.boot:spring-boot-starter-thymeleaf" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
-spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "springboot" }
 webjars-locator-lite = { module = "org.webjars:webjars-locator-lite" }
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions" }
+ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json" }
 bootstrap = { module = "org.webjars:bootstrap", version.ref = "bootstrap" }
 
 [plugins]
@@ -52,4 +57,3 @@ kotlin-plugin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref 
 kotlin-plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 dependencycheck = { id = "org.owasp.dependencycheck", version.ref = "dependencycheck" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }

@@ -19,11 +19,7 @@ import arrow.core.Either
 import arrow.core.getOrElse
 import arrow.core.toNonEmptyListOrNull
 import eu.europa.ec.eudi.trustvalidator.adapter.out.x509.X509CertificateUtils
-import eu.europa.ec.eudi.trustvalidator.port.input.trust.ErrorResponseTO
-import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
-import eu.europa.ec.eudi.trustvalidator.port.input.trust.TrustQueryTO
-import eu.europa.ec.eudi.trustvalidator.port.input.trust.TrustResponseTO
-import eu.europa.ec.eudi.trustvalidator.port.input.trust.VerificationContextTO
+import eu.europa.ec.eudi.trustvalidator.port.input.trust.*
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType

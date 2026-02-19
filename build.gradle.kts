@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.kotlin.plugin.spring)
     alias(libs.plugins.kotlin.plugin.serialization)
     alias(libs.plugins.spotless)
-    alias(libs.plugins.kapt)
     alias(libs.plugins.kover)
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.dependencycheck)
@@ -14,6 +13,12 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://central.sonatype.com/repository/maven-snapshots")
+        mavenContent {
+            snapshotsOnly()
+        }
+    }
 }
 
 dependencies {
@@ -21,6 +26,7 @@ dependencies {
     implementation(platform(libs.kotlinx.serialization.bom))
     implementation(platform(libs.kotlinx.coroutines.bom))
     implementation(platform(libs.arrow.stack))
+    implementation(platform(libs.ktor.bom))
     implementation(platform(libs.spring.boot.dependencies))
 
     implementation(libs.kotlin.stdlib)
@@ -32,17 +38,21 @@ dependencies {
     implementation(libs.arrow.core)
     implementation(libs.arrow.core.serialization)
 
-    implementation(libs.consultation.dss)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+    implementation(libs.consultation.lotl)
     implementation(libs.dss.tsl.validation)
     implementation(libs.dss.policy.jaxb)
     implementation(libs.dss.utils.google.guava)
+    implementation(libs.consultation.lote)
 
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.thymeleaf)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.reactor.kotlin.extensions)
-    kapt(libs.spring.boot.configuration.processor)
 
     implementation(libs.webjars.locator.lite)
     implementation(libs.swagger.ui)
