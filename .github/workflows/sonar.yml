@@ -36,7 +36,7 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/wrapper-validation@v5
       - uses: gradle/actions/setup-gradle@v5
-      - run: ./gradlew clean test koverXmlReport
+      - run: ./gradlew clean test koverXmlReport --refresh-dependencies
       - uses: sonarsource/sonarqube-scan-action@v6.0.0
         if: (github.event_name == 'push'|| github.event_name == 'workflow_dispatch')
         with:
