@@ -24,9 +24,7 @@ import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustValidatorUi
 import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.and
-import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.direct
 import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.or
-import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.pkix
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
 import eu.europa.ec.eudi.trustvalidator.config.*
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
@@ -110,7 +108,7 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
             config.trustSources?.getTrustAnchorsUsingKeyStore() ?: GetTrustAnchorsForSupportedQueries.empty()
 
         IsChainTrustedForEUDIW(
-            ValidateCertificateChain.direct() or ValidateCertificateChain.pkix { isRevocationEnabled = false },
+            ValidateCertificateChainUsingDirectTrustJvm or ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
             getTrustAnchorsFromLoTL and getTrustAnchorsFromLoTE,
         ).recoverWith { getTrustAnchorsFromKeyStore }
     }
