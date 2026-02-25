@@ -20,6 +20,7 @@ import arrow.core.toNonEmptyListOrNull
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
+import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustValidatorUi
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
 import eu.europa.ec.eudi.trustvalidator.config.TrustValidatorConfigurationProperties
 import eu.europa.ec.eudi.trustvalidator.config.getTrustAnchorsUsingKeyStore
@@ -82,6 +83,7 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
     }
 
     registerBean {
+        val trustValidatorUi = TrustValidatorUi(bean())
         val trustApi = TrustApi(bean())
         val swaggerUi = SwaggerUi(
             publicResourcesBasePath =
@@ -89,7 +91,7 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
             webJarResourcesBasePath =
                 env.getRequiredProperty("spring.webflux.webjars-path-pattern").removeSuffix("/**"),
         )
-        trustApi.route.and(swaggerUi.route)
+        trustApi.route.and(swaggerUi.route).and(trustValidatorUi.route)
     }
 
     registerBean {

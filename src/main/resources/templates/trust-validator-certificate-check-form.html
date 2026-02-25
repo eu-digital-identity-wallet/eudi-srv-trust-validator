@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css"
+          href="../public/css/style.css"
+          th:href="@{/public/css/style.css}">
+    <title th:text="#{trust.validator.title}">Trust Validator</title>
+</head>
+<body>
+<main>
+    <div class="container p-4">
+        <div class="row gy-2 mb-4">
+            <div class="col d-flex justify-content-start align-items-center">
+                <img class="eudiw-logo"
+                     src="../public/img/eudiw-logo.svg"
+                     th:src="@{/public/img/eudiw-logo.svg}"
+                     alt="EU Digital Identity Wallet"/>
+            </div>
+            <div class="col d-flex justify-content-center align-items-center">
+                <h1 th:text="#{trust.validator.title}">Trust Validator</h1>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col">
+                <h5 th:text="#{trust.validator.subtitle}">Validate an X.509 certificate chain against a supported
+                    verification context.</h5>
+                <h5 th:text="#{trust.validator.hint}">Provide one certificate per line as Base64-encoded DER (no PEM
+                    headers/footers).</h5>
+            </div>
+        </div>
+
+        <div class="row mb-2 p-3 bg-secondary-subtle rounded">
+            <div class="col">
+                <form id="trust-validator-form"
+                      method="post"
+                      enctype="application/x-www-form-urlencoded"
+                      th:action="@{/trust/validator}">
+
+                    <div class="mb-3">
+                        <label for="certificatesBase64" class="form-label"
+                               th:text="#{trust.validator.form.certificates.label}">
+                            Certificate chain (line-separated Base64(DER))
+                        </label>
+                        <textarea class="form-control"
+                                  id="certificatesBase64"
+                                  name="certificatesBase64"
+                                  rows="10"
+                                  th:placeholder="#{trust.validator.form.certificates.placeholder}"
+                                  th:text="${certificatesBase64}"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="verificationContext" class="form-label"
+                               th:text="#{trust.validator.form.context.label}">
+                            Verification context
+                        </label>
+                        <select class="form-select"
+                                id="verificationContext"
+                                name="verificationContext"
+                                required>
+                            <option value=""
+                                    th:selected="${#strings.isEmpty(selectedContext)}"
+                                    th:text="#{trust.validator.form.context.select}"
+                                    disabled>
+                                Select a context
+                            </option>
+                            <option th:each="context : ${verificationContexts}"
+                                    th:value="${context}"
+                                    th:text="${context}"
+                                    th:selected="${context == selectedContext}">
+                                CONTEXT
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="useCaseContainer" style="display:none;">
+                        <label for="verificationUseCase" class="form-label"
+                               th:text="#{trust.validator.form.usecase.label}">
+                            Verification use-case (optional)
+                        </label>
+                        <input class="form-control"
+                               type="text"
+                               id="verificationUseCase"
+                               name="verificationUseCase"
+                               th:placeholder="#{trust.validator.form.usecase.placeholder}"
+                               th:value="${useCase}">
+                        <div class="form-text" th:text="#{trust.validator.form.usecase.help}">
+                            Applicable to contexts EAA, EAAStatus and Custom.
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary"
+                                th:text="#{trust.validator.action.validate}">
+                            Validate
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-4" th:if="${!#strings.isEmpty(status)}">
+                    <div class="alert"
+                         th:classappend="${status == 'success'} ? ' alert-success' : ' alert-danger'"
+                         role="alert">
+                        <strong th:text="${status == 'success'} ? #{trust.validator.result.success} : #{trust.validator.result.error}">
+                            Status
+                        </strong>
+                        <span th:text="${message}">Message</span>
+                    </div>
+
+                    <div class="card" th:if="${status == 'success'}">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3" th:text="#{trust.validator.result.anchor.title}">
+                                Trust anchor used
+                            </h5>
+                            <div>
+                                <div class="fw-semibold" th:text="#{trust.validator.result.anchor.issuer}">Issuer</div>
+                                <div class="font-monospace small" th:text="${trustAnchorIssuer}">issuer</div>
+                            </div>
+                            <div class="mb-2">
+                                <div class="fw-semibold" th:text="#{trust.validator.result.anchor.certificate}">Trust
+                                    Anchor Certificate
+                                </div>
+                                <div class="font-monospace small" th:text="${trustAnchorCertificate}">subject</div>
+                            </div>
+                            <div class="mt-3" th:if="${#strings.isEmpty(trustAnchorCertificate)}">
+                                <div class="text-muted small" th:text="#{trust.validator.result.anchor.unavailable}">
+                                    Trust anchor details are not available.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col d-flex justify-content-end">
+                <a class="btn btn-outline-secondary"
+                   th:href="@{/trust/validator}"
+                   th:text="#{trust.validator.action.reset}">
+                    Reset
+                </a>
+            </div>
+        </div>
+
+    </div>
+</main>
+<script type="application/javascript">
+    (function () {
+        const context = document.getElementById("verificationContext");
+        const useCaseContainer = document.getElementById("useCaseContainer");
+
+        function toggleUseCase() {
+            switch (context.value) {
+                case "EAA":
+                case "EAAStatus":
+                case "Custom":
+                    useCaseContainer.style.display = "block";
+                    break;
+                default:
+                    useCaseContainer.style.display = "none";
+            }
+        }
+
+        if (context) {
+            context.addEventListener("change", toggleUseCase);
+            toggleUseCase();
+        }
+    })();
+</script>
+
+<script type="application/javascript"
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js">
+</script>
+</body>
+</html>
