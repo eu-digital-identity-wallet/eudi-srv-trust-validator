@@ -87,8 +87,6 @@ internal class TrustValidatorUi(
 
             val useCaseSuffix = trustQuery.useCase.buildUseCaseText()
 
-            println(useCaseSuffix)
-
             ensure(trustResponse.trusted && trustResponse.trustAnchor != null) {
                 ValidationResult.Error(
                     message = "Validation failed for context '${trustQuery.verificationContext}'$useCaseSuffix.",
