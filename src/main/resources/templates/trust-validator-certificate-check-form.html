@@ -117,14 +117,14 @@
                                 Trust anchor used
                             </h5>
                             <div>
-                                <div class="fw-semibold" th:text="#{trust.validator.result.anchor.issuer}">Issuer</div>
-                                <div class="font-monospace small" th:text="${trustAnchorIssuer}">issuer</div>
+                                <div class="fw-semibold" th:text="#{trust.validator.result.anchor.issuer.subject}">Trust Anchor Subject</div>
+                                <div class="font-monospace small" th:text="${trustAnchorSubject}">subject</div>
                             </div>
                             <div class="mb-2">
                                 <div class="fw-semibold" th:text="#{trust.validator.result.anchor.certificate}">Trust
                                     Anchor Certificate
                                 </div>
-                                <div class="font-monospace small" th:text="${trustAnchorCertificate}">subject</div>
+                                <div class="font-monospace small" th:text="${trustAnchorCertificate}">certificate</div>
                             </div>
                             <div class="mt-3" th:if="${#strings.isEmpty(trustAnchorCertificate)}">
                                 <div class="text-muted small" th:text="#{trust.validator.result.anchor.unavailable}">
