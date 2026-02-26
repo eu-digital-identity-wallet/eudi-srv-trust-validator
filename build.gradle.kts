@@ -46,6 +46,7 @@ dependencies {
 
     implementation(libs.webjars.locator.lite)
     implementation(libs.swagger.ui)
+    implementation(libs.bootstrap)
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlinx.coroutines.test)

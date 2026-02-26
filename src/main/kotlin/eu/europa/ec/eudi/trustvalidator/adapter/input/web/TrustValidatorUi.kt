@@ -19,7 +19,7 @@ import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.toNonEmptyListOrNull
-import eu.europa.ec.eudi.trustvalidator.adapter.out.Base64CertificateUtils
+import eu.europa.ec.eudi.trustvalidator.adapter.out.x509.X509CertificateUtils
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.TrustQueryTO
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.VerificationContextTO
@@ -65,13 +65,12 @@ internal class TrustValidatorUi(
             .renderAndAwait(
                 "trust-validator-certificate-check-form",
                 mapOf(
-                    "verificationContexts" to VerificationContextTO.entries.map { it.name },
+                    "context" to VerificationContextTO.entries.map { it.name },
                 ),
             )
     }
 
     private suspend fun handleSubmitTrustValidatorForm(request: ServerRequest): ServerResponse {
-        request.createTrustQueryTO()
         val result = either {
             val trustQuery = request.createTrustQueryTO().mapLeft {
                 ValidationResult.Error(
@@ -95,7 +94,7 @@ internal class TrustValidatorUi(
 
             val anchor = trustResponse.trustAnchor
             val certificate = anchor.let { cert ->
-                Base64CertificateUtils.encode(cert)
+                X509CertificateUtils.encode(cert)
             }
             ValidationResult.Success(
                 message = "Validation succeeded for context '${trustQuery.verificationContext}'$useCaseSuffix.",
@@ -114,7 +113,7 @@ internal class TrustValidatorUi(
             .renderAndAwait(
                 "trust-validator-certificate-check-form",
                 mapOf(
-                    "verificationContexts" to VerificationContextTO.entries.map { it.name },
+                    "context" to VerificationContextTO.entries.map { it.name },
                     "status" to validationResult.status,
                     "message" to validationResult.message,
                     "trustAnchorSubject" to subject,
@@ -152,7 +151,7 @@ private suspend fun String?.buildUseCaseText(): String? = if (this.isNullOrBlank
 private suspend fun ServerRequest.createTrustQueryTO(): Either<Throwable, TrustQueryTO> = Either.catch {
     val request = this.awaitFormData()
     val x509Certificates = run {
-        request.getFirst("certificatesBase64")?.let {
+        request.getFirst("chain")?.let {
             val certificates = it.trim()
                 .lineSequence()
                 .map { certificate -> certificate.trim() }
@@ -164,7 +163,7 @@ private suspend fun ServerRequest.createTrustQueryTO(): Either<Throwable, TrustQ
             }
 
             val x509Certificates = certificates.map { certificate ->
-                Base64CertificateUtils.decode(certificate)
+                X509CertificateUtils.decodeBase64EncodedDer(certificate)
             }
             requireNotNull(x509Certificates.toNonEmptyListOrNull()) { "Certificate chain must not be empty." }
         }
@@ -172,14 +171,22 @@ private suspend fun ServerRequest.createTrustQueryTO(): Either<Throwable, TrustQ
     requireNotNull(x509Certificates) { "Certificate chain must not be empty." }
 
     val verificationContext = run {
-        val verificationContextRaw = request.getFirst("verificationContext")?.trim().orEmpty()
-        val verificationContext = verificationContextRaw.ifBlank {
-            error("Verification context must be selected.")
-        }
+        val verificationContext = request.getFirst("context")
+        require(!verificationContext.isNullOrBlank()) { "Verification context must be selected." }
+
         VerificationContextTO.valueOf(verificationContext)
     }
 
-    val useCase = request.getFirst("verificationUseCase")?.trim().orEmpty()
+    val useCase = run {
+        val useCase = request.getFirst("useCase")?.trim()
+        println(useCase)
+        when (verificationContext) {
+            VerificationContextTO.Custom, VerificationContextTO.EAA, VerificationContextTO.EAAStatus ->
+                require(!useCase.isNullOrBlank()) { "Use case must be selected." }
+            else -> require(useCase.isNullOrBlank()) { "Use case must not be selected for this context." }
+        }
+        useCase
+    }
 
     TrustQueryTO(x509Certificates, verificationContext, useCase)
 }

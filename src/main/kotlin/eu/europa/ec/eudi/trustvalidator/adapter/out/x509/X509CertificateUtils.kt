@@ -13,20 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.europa.ec.eudi.trustvalidator.adapter.out
+package eu.europa.ec.eudi.trustvalidator.adapter.out.x509
 
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import kotlin.io.encoding.Base64
 
-object Base64CertificateUtils {
+object X509CertificateUtils {
     private val certificateFactory by lazy { CertificateFactory.getInstance("X.509") }
     private val base64 by lazy { Base64.withPadding(Base64.PaddingOption.ABSENT_OPTIONAL) }
 
-    fun decode(encodedCertificate: String): X509Certificate {
+    fun decodeBase64EncodedDer(encodedCertificate: String): X509Certificate {
         val derEncodedCertificate = base64.decode(encodedCertificate)
-        return certificateFactory.generateCertificate(derEncodedCertificate.inputStream()) as X509Certificate
+        return decodeDer(derEncodedCertificate)
     }
+
+    fun decodeDer(der: ByteArray): X509Certificate = der.inputStream()
+        .use {
+            certificateFactory.generateCertificate(it) as X509Certificate
+        }
 
     fun encode(certificate: X509Certificate): String = base64.encode(certificate.encoded)
 }

@@ -12,6 +12,7 @@ dependencycheck = "12.1.1"
 swaggerUi = "5.31.0"
 kover = "0.9.4"
 consultation-dss = "0.2.2"
+bootstrap = "5.3.3"
 
 [libraries]
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
@@ -41,6 +42,7 @@ spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-star
 spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "springboot" }
 webjars-locator-lite = { module = "org.webjars:webjars-locator-lite" }
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions" }
+bootstrap = { module = "org.webjars:bootstrap", version.ref = "bootstrap" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "springboot" }
