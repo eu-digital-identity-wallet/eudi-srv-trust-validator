@@ -22,6 +22,8 @@ import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.coRouter
 import org.springframework.web.reactive.function.server.renderAndAwait
 
+private val log = LoggerFactory.getLogger(SwaggerUi::class.java)
+
 /**
  * Web adapter for displaying the Swagger UI.
  *
@@ -50,6 +52,5 @@ internal class SwaggerUi(
 
     companion object {
         const val SWAGGER_UI = "/swagger-ui"
-        private val log = LoggerFactory.getLogger(SwaggerUi::class.java)
     }
 }
