@@ -71,7 +71,7 @@ internal class TrustValidatorUi(
     }
 
     private suspend fun handleSubmitTrustValidatorForm(request: ServerRequest): ServerResponse {
-        suspend fun Throwable.toServerResponse():ServerResponse = ServerResponse.badRequest()
+        suspend fun Throwable.toServerResponse(): ServerResponse = ServerResponse.badRequest()
             .contentType(MediaType.TEXT_HTML)
             .renderAndAwait(
                 "trust-validator-certificate-check-form",
