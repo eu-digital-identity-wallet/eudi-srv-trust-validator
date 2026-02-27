@@ -17,13 +17,11 @@ package eu.europa.ec.eudi.trustvalidator.adapter.input.web
 
 import arrow.core.Either
 import arrow.core.raise.either
-import arrow.core.raise.ensure
 import arrow.core.toNonEmptyListOrNull
 import eu.europa.ec.eudi.trustvalidator.adapter.out.x509.X509CertificateUtils
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.TrustQueryTO
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.VerificationContextTO
-import kotlinx.serialization.Serializable
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -65,7 +63,7 @@ internal class TrustValidatorUi(
             .renderAndAwait(
                 "trust-validator-certificate-check-form",
                 mapOf(
-                    "context" to VerificationContextTO.entries.map { it.name },
+                    "verificationContext" to VerificationContextTO.entries.map { it.name },
                 ),
             )
     }
@@ -86,15 +84,9 @@ internal class TrustValidatorUi(
 
             val useCaseSuffix = trustQuery.useCase.buildUseCaseText()
 
-            ensure(trustResponse.trusted && trustResponse.trustAnchor != null) {
-                ValidationResult.Error(
-                    message = "Validation failed for context '${trustQuery.verificationContext}'$useCaseSuffix.",
-                )
-            }
-
-            val anchor = trustResponse.trustAnchor
+            val anchor = checkNotNull(trustResponse.trustAnchor)
             val certificate = anchor.let { cert ->
-                X509CertificateUtils.encode(cert)
+                X509CertificateUtils.base64Encode(cert)
             }
             ValidationResult.Success(
                 message = "Validation succeeded for context '${trustQuery.verificationContext}'$useCaseSuffix.",
@@ -113,7 +105,7 @@ internal class TrustValidatorUi(
             .renderAndAwait(
                 "trust-validator-certificate-check-form",
                 mapOf(
-                    "context" to VerificationContextTO.entries.map { it.name },
+                    "verificationContext" to VerificationContextTO.entries.map { it.name },
                     "status" to validationResult.status,
                     "message" to validationResult.message,
                     "trustAnchorSubject" to subject,
@@ -130,7 +122,6 @@ internal class TrustValidatorUi(
         val status: String
         val message: String
 
-        @Serializable
         data class Success(
             override val message: String,
             val trustAnchorCertificate: String,
@@ -139,54 +130,34 @@ internal class TrustValidatorUi(
             override val status = "success"
         }
 
-        @Serializable
         data class Error(override val message: String) : ValidationResult {
             override val status = "error"
         }
     }
 }
 
-private suspend fun String?.buildUseCaseText(): String? = if (this.isNullOrBlank()) "" else " (use-case: '$this')"
+private fun String?.buildUseCaseText(): String? = if (this.isNullOrBlank()) "" else " (use-case: '$this')"
 
 private suspend fun ServerRequest.createTrustQueryTO(): Either<Throwable, TrustQueryTO> = Either.catch {
     val request = this.awaitFormData()
     val x509Certificates = run {
-        request.getFirst("chain")?.let {
-            val certificates = it.trim()
-                .lineSequence()
-                .map { certificate -> certificate.trim() }
-                .filter { certificate -> certificate.isNotEmpty() }
-                .toList()
-
-            require(certificates.isNotEmpty()) {
-                "Please provide at least one Base64-encoded DER certificate (one per line)."
-            }
-
-            val x509Certificates = certificates.map { certificate ->
-                X509CertificateUtils.decodeBase64EncodedDer(certificate)
-            }
-            requireNotNull(x509Certificates.toNonEmptyListOrNull()) { "Certificate chain must not be empty." }
-        }
+        request.getFirst("chain")?.trim()
+            ?.lineSequence()
+            ?.map { certificate -> certificate.trim() }
+            ?.filter { certificate -> certificate.isNotEmpty() }
+            ?.map { certificate -> X509CertificateUtils.decodeBase64EncodedDer(certificate) }?.asIterable()
+            ?.toNonEmptyListOrNull()
     }
     requireNotNull(x509Certificates) { "Certificate chain must not be empty." }
 
     val verificationContext = run {
-        val verificationContext = request.getFirst("context")
+        val verificationContext = request.getFirst("verificationContext")
         require(!verificationContext.isNullOrBlank()) { "Verification context must be selected." }
 
         VerificationContextTO.valueOf(verificationContext)
     }
 
-    val useCase = run {
-        val useCase = request.getFirst("useCase")?.trim()
-        println(useCase)
-        when (verificationContext) {
-            VerificationContextTO.Custom, VerificationContextTO.EAA, VerificationContextTO.EAAStatus ->
-                require(!useCase.isNullOrBlank()) { "Use case must be selected." }
-            else -> require(useCase.isNullOrBlank()) { "Use case must not be selected for this context." }
-        }
-        useCase
-    }
+    val useCase = request.getFirst("useCase")?.trim()?.takeIf { it.isNotBlank() }
 
     TrustQueryTO(x509Certificates, verificationContext, useCase)
 }

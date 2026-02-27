@@ -33,5 +33,5 @@ object X509CertificateUtils {
             certificateFactory.generateCertificate(it) as X509Certificate
         }
 
-    fun encode(certificate: X509Certificate): String = base64.encode(certificate.encoded)
+    fun base64Encode(certificate: X509Certificate): String = base64.encode(certificate.encoded)
 }

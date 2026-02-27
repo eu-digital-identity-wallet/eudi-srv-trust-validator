@@ -64,6 +64,9 @@ data class TrustResponseTO(
     @Required val trusted: Boolean,
     @Serializable(with = X509CertificateSerializer::class) val trustAnchor: X509Certificate?,
 ) {
+    init {
+        require(!trusted || null != trustAnchor)
+    }
     companion object {
         fun trusted(trustAnchor: X509Certificate) = TrustResponseTO(true, trustAnchor)
         fun notTrusted() = TrustResponseTO(false, null)

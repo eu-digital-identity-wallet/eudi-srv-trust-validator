@@ -58,13 +58,13 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="context" class="form-label"
+                        <label for="verificationContext" class="form-label"
                                th:text="#{trust.validator.form.context.label}">
                             Verification context
                         </label>
                         <select class="form-select"
-                                id="context"
-                                name="context"
+                                id="verificationContext"
+                                name="verificationContext"
                                 required>
                             <option value=""
                                     th:selected="${#strings.isEmpty(selectedContext)}"
@@ -72,10 +72,10 @@
                                     disabled>
                                 Select a context
                             </option>
-                            <option th:each="context : ${context}"
-                                    th:value="${context}"
-                                    th:text="${context}"
-                                    th:selected="${context == selectedContext}">
+                            <option th:each="verificationContext : ${verificationContext}"
+                                    th:value="${verificationContext}"
+                                    th:text="${verificationContext}"
+                                    th:selected="${verificationContext == selectedContext}">
                                 CONTEXT
                             </option>
                         </select>
@@ -169,12 +169,12 @@
         const buttonSpinner = document.getElementById("buttonSpinner");
         const loadingText = document.getElementById("loadingText");
         //UseCase visibility control
-        const context = document.getElementById("context");
+        const verificationContext = document.getElementById("verificationContext");
         const useCaseContainer = document.getElementById("useCaseContainer");
         const useCaseInput = document.getElementById("useCase");
 
         function toggleUseCase() {
-            switch (context.value) {
+            switch (verificationContext.value) {
                 case "EAA":
                 case "EAAStatus":
                 case "Custom":
@@ -188,21 +188,17 @@
             }
         }
 
-        function setLoadingState(isLoading) {
-            buttonText.style.display = isLoading ? "none" : "inline";
-            buttonSpinner.style.display = isLoading ? "inline-block" : "none";
-            loadingText.style.display = isLoading ? "inline" : "none";
-            validateButton.disabled = isLoading;
+        function setLoadingState() {
+            buttonText.style.display = "none";
+            buttonSpinner.style.display = "inline-block";
+            loadingText.style.display = "inline";
+            validateButton.disabled = true;
         }
 
-        if (context) {
-            context.addEventListener("change", toggleUseCase);
-            toggleUseCase();
-        }
-        
-        form.addEventListener("submit", function () {
-            setLoadingState(true);
-        });
+        form.addEventListener("submit", setLoadingState);
+        verificationContext.addEventListener("change", toggleUseCase);
+
+        toggleUseCase();
     })();
 </script>
 
