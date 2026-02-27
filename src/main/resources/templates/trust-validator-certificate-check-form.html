@@ -99,9 +99,12 @@
                     </div>
 
                     <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary"
-                                th:text="#{trust.validator.action.validate}">
-                            Validate
+                        <button type="submit" class="btn btn-primary" id="validateButton">
+                            <span id="buttonText" th:text="#{trust.validator.action.validate}">Validate</span>
+                            <span id="buttonSpinner" class="spinner-border spinner-border-sm" role="status"
+                                  aria-hidden="true" style="display:none;"></span>
+                            <span id="loadingText" class="sr-only" style="display:none;"
+                                  th:text="#{trust.validator.action.loading}">Loading...</span>
                         </button>
                     </div>
                 </form>
@@ -159,6 +162,13 @@
 </main>
 <script type="application/javascript">
     (function () {
+        //Form loading button change
+        const form = document.getElementById("x509-certificate-chain-validation-form");
+        const validateButton = document.getElementById("validateButton");
+        const buttonText = document.getElementById("buttonText");
+        const buttonSpinner = document.getElementById("buttonSpinner");
+        const loadingText = document.getElementById("loadingText");
+        //UseCase visibility control
         const context = document.getElementById("context");
         const useCaseContainer = document.getElementById("useCaseContainer");
         const useCaseInput = document.getElementById("useCase");
@@ -178,10 +188,21 @@
             }
         }
 
+        function setLoadingState(isLoading) {
+            buttonText.style.display = isLoading ? "none" : "inline";
+            buttonSpinner.style.display = isLoading ? "inline-block" : "none";
+            loadingText.style.display = isLoading ? "inline" : "none";
+            validateButton.disabled = isLoading;
+        }
+
         if (context) {
             context.addEventListener("change", toggleUseCase);
             toggleUseCase();
         }
+        
+        form.addEventListener("submit", function () {
+            setLoadingState(true);
+        });
     })();
 </script>
 
