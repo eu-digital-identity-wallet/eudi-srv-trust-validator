@@ -115,17 +115,15 @@ internal class TrustValidatorUi(
                 put("selectedContext", formData.getFirst("verificationContext"))
                 put("useCase", formData.getFirst("useCase"))
                 put("verificationContexts", VerificationContextTO.entries.map { it.name })
+                put("success", trusted)
 
                 if (trusted) {
-                    put("success", true)
-
                     val trustAnchor = checkNotNull(this@toServerResponse.trustAnchor)
                     val certificate = X509CertificateUtils.base64Encode(trustAnchor)
                     put("trustAnchorSubject", trustAnchor.subjectX500Principal?.name)
                     put("trustAnchorCertificate", certificate)
                     put("messageKey", "trust.validator.result.success.trusted")
                 } else {
-                    put("success", false)
                     put("messageKey", "trust.validator.result.error.notTrusted")
                 }
             }
