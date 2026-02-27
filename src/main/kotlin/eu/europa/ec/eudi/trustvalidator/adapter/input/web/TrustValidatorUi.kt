@@ -27,6 +27,7 @@ import eu.europa.ec.eudi.trustvalidator.port.input.trust.VerificationContextTO
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.util.MultiValueMap
 import org.springframework.web.reactive.function.server.*
 
 private val log = LoggerFactory.getLogger(TrustValidatorUi::class.java)
@@ -70,95 +71,98 @@ internal class TrustValidatorUi(
             )
     }
 
+    typealias FormData = MultiValueMap<String, String>
+
     private suspend fun handleSubmitTrustValidatorForm(request: ServerRequest): ServerResponse {
-        suspend fun Throwable.toServerResponse(): ServerResponse = ServerResponse.badRequest()
+        suspend fun Throwable.toServerResponse(formData: FormData): ServerResponse = ServerResponse.badRequest()
             .contentType(MediaType.TEXT_HTML)
             .renderAndAwait(
                 "trust-validator-certificate-check-form",
                 mapOf(
+                    "selectedContext" to formData.getFirst("verificationContext"),
+                    "useCase" to (formData.getFirst("useCase") ?: ""),
                     "verificationContext" to VerificationContextTO.entries.map { it.name },
                     "status" to "error",
                     "message" to "Invalid input: ${this.message ?: this.javaClass.simpleName}",
                 ),
             )
-        suspend fun ErrorResponseTO.toServerResponse(verificationContext: VerificationContextTO): ServerResponse = when (this) {
-            is ErrorResponseTO.ClientErrorResponseTO -> {
-                ServerResponse.badRequest()
-                    .contentType(MediaType.TEXT_HTML)
-                    .renderAndAwait(
-                        "trust-validator-certificate-check-form",
-                        mapOf(
-                            "verificationContext" to VerificationContextTO.entries.map { it.name },
-                            "status" to "error",
-                            "message" to "Use case is required but not specified.",
-                        ),
-                    )
+
+        suspend fun ErrorResponseTO.toServerResponse(formData: FormData): ServerResponse {
+            val httpStatusCode = when (this) {
+                is ErrorResponseTO.ClientErrorResponseTO -> HttpStatus.BAD_REQUEST
+                is ErrorResponseTO.ServerErrorResponseTO -> HttpStatus.INTERNAL_SERVER_ERROR
             }
-            is ErrorResponseTO.ServerErrorResponseTO -> {
-                ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .contentType(MediaType.TEXT_HTML)
-                    .renderAndAwait(
-                        "trust-validator-certificate-check-form",
-                        mapOf(
-                            "verificationContext" to VerificationContextTO.entries.map { it.name },
-                            "status" to "error",
-                            "message" to "No configuration found for $verificationContext",
-                        ),
-                    )
-            }
-        }
-        suspend fun TrustResponseTO.toServerResponse(
-            verificationContext: VerificationContextTO,
-            useCaseSuffix: String? = null,
-        ): ServerResponse = if (!this.trusted) {
-            ServerResponse.ok()
+            return ServerResponse.status(httpStatusCode)
                 .contentType(MediaType.TEXT_HTML)
                 .renderAndAwait(
                     "trust-validator-certificate-check-form",
                     mapOf(
+                        "chain" to formData.getFirst("chain"),
+                        "selectedContext" to formData.getFirst("verificationContext"),
+                        "useCase" to (formData.getFirst("useCase") ?: ""),
                         "verificationContext" to VerificationContextTO.entries.map { it.name },
                         "status" to "error",
-                        "message" to "Chain could not be validated for context '$verificationContext'$useCaseSuffix.",
-                    ),
-                )
-        } else {
-            val anchor = checkNotNull(this.trustAnchor)
-            val certificate = anchor.let { cert ->
-                X509CertificateUtils.base64Encode(cert)
-            }
-            ServerResponse.ok()
-                .contentType(MediaType.TEXT_HTML)
-                .renderAndAwait(
-                    "trust-validator-certificate-check-form",
-                    mapOf(
-                        "verificationContext" to VerificationContextTO.entries.map { it.name },
-                        "status" to "success",
-                        "message" to "Validation succeeded for context '$verificationContext'$useCaseSuffix.",
-                        "trustAnchorSubject" to anchor.subjectX500Principal?.name,
-                        "trustAnchorCertificate" to certificate,
+                        "message" to this.description,
                     ),
                 )
         }
 
+        suspend fun TrustResponseTO.toServerResponse(formData: FormData): ServerResponse {
+            return if (!this.trusted) {
+                ServerResponse.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .renderAndAwait(
+                        "trust-validator-certificate-check-form",
+                        mapOf(
+                            "chain" to formData.getFirst("chain"),
+                            "selectedContext" to formData.getFirst("verificationContext"),
+                            "useCase" to (formData.getFirst("useCase") ?: ""),
+                            "verificationContext" to VerificationContextTO.entries.map { it.name },
+                            "status" to "error",
+                            "message" to "Chain is not trusted for context " +
+                                "'${formData.getFirst("verificationContext")}' " +
+                                "${ (formData.getFirst("useCase") ?: "")}.",
+                        ),
+                    )
+            } else {
+                val trustAnchor = checkNotNull(this.trustAnchor)
+                val certificate = X509CertificateUtils.base64Encode(trustAnchor)
+                ServerResponse.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .renderAndAwait(
+                        "trust-validator-certificate-check-form",
+                        mapOf(
+                            "chain" to formData.getFirst("chain"),
+                            "selectedContext" to formData.getFirst("verificationContext"),
+                            "useCase" to (formData.getFirst("useCase") ?: ""),
+                            "verificationContext" to VerificationContextTO.entries.map { it.name },
+                            "status" to "success",
+                            "message" to "Validation succeeded for context " +
+                                "'${formData.getFirst("verificationContext")}' " +
+                                "${ (formData.getFirst("useCase") ?: "")}.",
+                            "trustAnchorSubject" to trustAnchor.subjectX500Principal?.name,
+                            "trustAnchorCertificate" to certificate,
+                        ),
+                    )
+            }
+        }
+
+        val formData = request.awaitFormData()
         val trustQuery = request.createTrustQueryTO().getOrElse { response ->
-            return@handleSubmitTrustValidatorForm response.toServerResponse()
+            return@handleSubmitTrustValidatorForm response.toServerResponse(formData)
         }
 
         val trustResponse = isChainTrusted(trustQuery).getOrElse { errorResponseTO ->
-            return@handleSubmitTrustValidatorForm errorResponseTO.toServerResponse(trustQuery.verificationContext)
+            return@handleSubmitTrustValidatorForm errorResponseTO.toServerResponse(formData)
         }
 
-        val useCaseSuffix = trustQuery.useCase.buildUseCaseText()
-
-        return trustResponse.toServerResponse(trustQuery.verificationContext, useCaseSuffix)
+        return trustResponse.toServerResponse(formData)
     }
 
     companion object {
         const val TRUST_VALIDATOR_UI: String = "/trust/validator"
     }
 }
-
-private fun String?.buildUseCaseText(): String? = if (this.isNullOrBlank()) "" else " (use-case: '$this')"
 
 private suspend fun ServerRequest.createTrustQueryTO(): Either<Throwable, TrustQueryTO> = Either.catch {
     val request = this.awaitFormData()
