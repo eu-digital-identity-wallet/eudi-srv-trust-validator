@@ -66,7 +66,7 @@ internal class TrustValidatorUi(
             .renderAndAwait(
                 "trust-validator-certificate-check-form",
                 mapOf(
-                    "verificationContext" to VerificationContextTO.entries.map { it.name },
+                    "verificationContexts" to VerificationContextTO.entries.map { it.name },
                 ),
             )
     }
@@ -81,9 +81,10 @@ internal class TrustValidatorUi(
                 mapOf(
                     "selectedContext" to formData.getFirst("verificationContext"),
                     "useCase" to (formData.getFirst("useCase") ?: ""),
-                    "verificationContext" to VerificationContextTO.entries.map { it.name },
-                    "status" to "error",
-                    "message" to "Invalid input: ${message ?: javaClass.simpleName}",
+                    "verificationContexts" to VerificationContextTO.entries.map { it.name },
+                    "success" to false,
+                    "messageKey" to "trust.validator.result.error.invalidInput",
+                    "messageArgs" to (message ?: javaClass.simpleName),
                 ),
             )
 
@@ -100,9 +101,10 @@ internal class TrustValidatorUi(
                         "chain" to formData.getFirst("chain"),
                         "selectedContext" to formData.getFirst("verificationContext"),
                         "useCase" to (formData.getFirst("useCase") ?: ""),
-                        "verificationContext" to VerificationContextTO.entries.map { it.name },
-                        "status" to "error",
-                        "message" to description,
+                        "verificationContexts" to VerificationContextTO.entries.map { it.name },
+                        "success" to false,
+                        "messageKey" to "trust.validator.result.error.fromService",
+                        "messageArgs" to description,
                     ),
                 )
         }
@@ -112,19 +114,19 @@ internal class TrustValidatorUi(
                 put("chain", formData.getFirst("chain"))
                 put("selectedContext", formData.getFirst("verificationContext"))
                 put("useCase", formData.getFirst("useCase"))
-                put("verificationContext", VerificationContextTO.entries.map { it.name })
+                put("verificationContexts", VerificationContextTO.entries.map { it.name })
 
                 if (trusted) {
-                    put("status", "success")
+                    put("success", true)
 
                     val trustAnchor = checkNotNull(this@toServerResponse.trustAnchor)
                     val certificate = X509CertificateUtils.base64Encode(trustAnchor)
                     put("trustAnchorSubject", trustAnchor.subjectX500Principal?.name)
                     put("trustAnchorCertificate", certificate)
-                    put("message", "X.509 Certificate Chain is trusted")
+                    put("messageKey", "trust.validator.result.success.trusted")
                 } else {
-                    put("status", "error")
-                    put("message", "X.509 Certificate Chain is not trusted")
+                    put("success", false)
+                    put("messageKey", "trust.validator.result.error.notTrusted")
                 }
             }
 
@@ -145,7 +147,7 @@ internal class TrustValidatorUi(
     }
 
     companion object {
-        const val TRUST_VALIDATOR_UI: String = "/trust/validator"
+        const val TRUST_VALIDATOR_UI: String = "/validate"
     }
 }
 

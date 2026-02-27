@@ -42,7 +42,7 @@
                 <form id="x509-certificate-chain-validation-form"
                       method="post"
                       enctype="application/x-www-form-urlencoded"
-                      th:action="@{/trust/validator}">
+                      th:action="@{/validate}">
 
                     <div class="mb-3">
                         <label for="chain" class="form-label"
@@ -72,7 +72,7 @@
                                     disabled>
                                 Select a context
                             </option>
-                            <option th:each="verificationContext : ${verificationContext}"
+                            <option th:each="verificationContext : ${verificationContexts}"
                                     th:value="${verificationContext}"
                                     th:text="${verificationContext}"
                                     th:selected="${verificationContext == selectedContext}">
@@ -109,17 +109,19 @@
                     </div>
                 </form>
 
-                <div class="mt-4" th:if="${!#strings.isEmpty(status)}">
+                <div class="mt-4" th:if="${success != null}">
                     <div class="alert"
-                         th:classappend="${status == 'success'} ? ' alert-success' : ' alert-danger'"
+                         th:classappend="${success} ? ' alert-success' : ' alert-danger'"
                          role="alert">
-                        <strong th:text="${status == 'success'} ? #{trust.validator.result.success} : #{trust.validator.result.error}">
+                        <strong th:text="${success} ? #{trust.validator.result.success} : #{trust.validator.result.error}">
                             Status
                         </strong>
-                        <span th:text="${message}">Message</span>
+                        <span th:text="${messageKey != null} ? ${#messages.msg(messageKey, messageArgs)} : ${message}">
+                            Message
+                        </span>
                     </div>
 
-                    <div class="card" th:if="${status == 'success'}">
+                    <div class="card" th:if="${success}">
                         <div class="card-body">
                             <h5 class="card-title mb-3" th:text="#{trust.validator.result.anchor.title}">
                                 Trust anchor used
@@ -151,7 +153,7 @@
         <div class="row mt-4">
             <div class="col d-flex justify-content-end">
                 <a class="btn btn-outline-secondary"
-                   th:href="@{/trust/validator}"
+                   th:href="@{/validate}"
                    th:text="#{trust.validator.action.reset}">
                     Reset
                 </a>
