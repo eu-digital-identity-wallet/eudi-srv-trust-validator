@@ -71,10 +71,10 @@ internal class TrustValidatorUi(
             )
     }
 
-    typealias FormData = MultiValueMap<String, String>
-
     private suspend fun handleSubmitTrustValidatorForm(request: ServerRequest): ServerResponse {
-        suspend fun Throwable.toServerResponse(formData: FormData): ServerResponse = ServerResponse.badRequest()
+        val formData = request.awaitFormData()
+
+        suspend fun Throwable.toServerResponse(): ServerResponse = ServerResponse.badRequest()
             .contentType(MediaType.TEXT_HTML)
             .renderAndAwait(
                 "trust-validator-certificate-check-form",
@@ -83,11 +83,11 @@ internal class TrustValidatorUi(
                     "useCase" to (formData.getFirst("useCase") ?: ""),
                     "verificationContext" to VerificationContextTO.entries.map { it.name },
                     "status" to "error",
-                    "message" to "Invalid input: ${this.message ?: this.javaClass.simpleName}",
+                    "message" to "Invalid input: ${message ?: javaClass.simpleName}",
                 ),
             )
 
-        suspend fun ErrorResponseTO.toServerResponse(formData: FormData): ServerResponse {
+        suspend fun ErrorResponseTO.toServerResponse(): ServerResponse {
             val httpStatusCode = when (this) {
                 is ErrorResponseTO.ClientErrorResponseTO -> HttpStatus.BAD_REQUEST
                 is ErrorResponseTO.ServerErrorResponseTO -> HttpStatus.INTERNAL_SERVER_ERROR
@@ -102,61 +102,46 @@ internal class TrustValidatorUi(
                         "useCase" to (formData.getFirst("useCase") ?: ""),
                         "verificationContext" to VerificationContextTO.entries.map { it.name },
                         "status" to "error",
-                        "message" to this.description,
+                        "message" to description,
                     ),
                 )
         }
 
-        suspend fun TrustResponseTO.toServerResponse(formData: FormData): ServerResponse {
-            return if (!this.trusted) {
-                ServerResponse.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .renderAndAwait(
-                        "trust-validator-certificate-check-form",
-                        mapOf(
-                            "chain" to formData.getFirst("chain"),
-                            "selectedContext" to formData.getFirst("verificationContext"),
-                            "useCase" to (formData.getFirst("useCase") ?: ""),
-                            "verificationContext" to VerificationContextTO.entries.map { it.name },
-                            "status" to "error",
-                            "message" to "Chain is not trusted for context " +
-                                "'${formData.getFirst("verificationContext")}' " +
-                                "${ (formData.getFirst("useCase") ?: "")}.",
-                        ),
-                    )
-            } else {
-                val trustAnchor = checkNotNull(this.trustAnchor)
-                val certificate = X509CertificateUtils.base64Encode(trustAnchor)
-                ServerResponse.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .renderAndAwait(
-                        "trust-validator-certificate-check-form",
-                        mapOf(
-                            "chain" to formData.getFirst("chain"),
-                            "selectedContext" to formData.getFirst("verificationContext"),
-                            "useCase" to (formData.getFirst("useCase") ?: ""),
-                            "verificationContext" to VerificationContextTO.entries.map { it.name },
-                            "status" to "success",
-                            "message" to "Validation succeeded for context " +
-                                "'${formData.getFirst("verificationContext")}' " +
-                                "${ (formData.getFirst("useCase") ?: "")}.",
-                            "trustAnchorSubject" to trustAnchor.subjectX500Principal?.name,
-                            "trustAnchorCertificate" to certificate,
-                        ),
-                    )
+        suspend fun TrustResponseTO.toServerResponse(): ServerResponse {
+            val model = buildMap {
+                put("chain", formData.getFirst("chain"))
+                put("selectedContext", formData.getFirst("verificationContext"))
+                put("useCase", formData.getFirst("useCase"))
+                put("verificationContext", VerificationContextTO.entries.map { it.name })
+
+                if (trusted) {
+                    put("status", "success")
+
+                    val trustAnchor = checkNotNull(this@toServerResponse.trustAnchor)
+                    val certificate = X509CertificateUtils.base64Encode(trustAnchor)
+                    put("trustAnchorSubject", trustAnchor.subjectX500Principal?.name)
+                    put("trustAnchorCertificate", certificate)
+                    put("message", "X.509 Certificate Chain is trusted")
+                } else {
+                    put("status", "error")
+                    put("message", "X.509 Certificate Chain is not trusted")
+                }
             }
+
+            return ServerResponse.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .renderAndAwait("trust-validator-certificate-check-form", model)
         }
 
-        val formData = request.awaitFormData()
-        val trustQuery = request.createTrustQueryTO().getOrElse { response ->
-            return@handleSubmitTrustValidatorForm response.toServerResponse(formData)
+        val trustQuery = TrustQueryTO.fromFormData(formData).getOrElse { response ->
+            return@handleSubmitTrustValidatorForm response.toServerResponse()
         }
 
         val trustResponse = isChainTrusted(trustQuery).getOrElse { errorResponseTO ->
-            return@handleSubmitTrustValidatorForm errorResponseTO.toServerResponse(formData)
+            return@handleSubmitTrustValidatorForm errorResponseTO.toServerResponse()
         }
 
-        return trustResponse.toServerResponse(formData)
+        return trustResponse.toServerResponse()
     }
 
     companion object {
@@ -164,26 +149,26 @@ internal class TrustValidatorUi(
     }
 }
 
-private suspend fun ServerRequest.createTrustQueryTO(): Either<Throwable, TrustQueryTO> = Either.catch {
-    val request = this.awaitFormData()
-    val x509Certificates = run {
-        request.getFirst("chain")?.trim()
-            ?.lineSequence()
-            ?.map { certificate -> certificate.trim() }
-            ?.filter { certificate -> certificate.isNotEmpty() }
-            ?.map { certificate -> X509CertificateUtils.decodeBase64EncodedDer(certificate) }?.asIterable()
-            ?.toNonEmptyListOrNull()
+private fun TrustQueryTO.Companion.fromFormData(formData: MultiValueMap<String, String>): Either<Throwable, TrustQueryTO> =
+    Either.catch {
+        val x509Certificates = run {
+            formData.getFirst("chain")?.trim()
+                ?.lineSequence()
+                ?.map { certificate -> certificate.trim() }
+                ?.filter { certificate -> certificate.isNotEmpty() }
+                ?.map { certificate -> X509CertificateUtils.decodeBase64EncodedDer(certificate) }?.asIterable()
+                ?.toNonEmptyListOrNull()
+        }
+        requireNotNull(x509Certificates) { "Certificate chain must not be empty." }
+
+        val verificationContext = run {
+            val verificationContext = formData.getFirst("verificationContext")
+            require(!verificationContext.isNullOrBlank()) { "Verification context must be selected." }
+
+            VerificationContextTO.valueOf(verificationContext)
+        }
+
+        val useCase = formData.getFirst("useCase")?.trim()?.takeIf { it.isNotBlank() }
+
+        TrustQueryTO(x509Certificates, verificationContext, useCase)
     }
-    requireNotNull(x509Certificates) { "Certificate chain must not be empty." }
-
-    val verificationContext = run {
-        val verificationContext = request.getFirst("verificationContext")
-        require(!verificationContext.isNullOrBlank()) { "Verification context must be selected." }
-
-        VerificationContextTO.valueOf(verificationContext)
-    }
-
-    val useCase = request.getFirst("useCase")?.trim()?.takeIf { it.isNotBlank() }
-
-    TrustQueryTO(x509Certificates, verificationContext, useCase)
-}
