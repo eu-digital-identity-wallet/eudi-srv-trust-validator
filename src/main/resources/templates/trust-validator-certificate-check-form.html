@@ -152,8 +152,13 @@
 
         <div class="row mt-4">
             <div class="col d-flex justify-content-end">
-                <input class="btn btn-outline-secondary" id="resetFormButton" type="reset" value="Reset"
-                       form="x509-certificate-chain-validation-form" th:value="#{trust.validator.action.reset}"/>
+                <button class="btn btn-outline-danger"
+                        id="resetFormButton"
+                        onclick="window.location.href='/validate'"
+                        th:text="#{trust.validator.action.reset}"
+                >
+                    Reset
+                </button>
             </div>
         </div>
 
