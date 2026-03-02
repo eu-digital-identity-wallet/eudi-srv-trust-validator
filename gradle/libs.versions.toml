@@ -1,18 +1,18 @@
 [versions]
-kotlin = "2.3.0"
+kotlin = "2.3.10"
 kotlinx-serialization = "1.10.0"
 kotlinx-coroutines = "1.10.2"
-kotlinx-datetime = "0.7.1"
-springboot = "4.0.2"
-spotless = "7.0.2"
+kotlinx-datetime = "0.7.1-0.6.x-compat"
+springboot = "4.0.3"
+spotless = "8.2.1"
 java = "17"
 ktlint = "0.50.0"
 arrow = "2.2.1.1"
-dependencycheck = "12.1.1"
-swaggerUi = "5.31.0"
-kover = "0.9.4"
+dependencycheck = "12.2.0"
+swaggerUi = "5.32.0"
+kover = "0.9.7"
 consultation-dss = "0.2.2"
-bootstrap = "5.3.3"
+bootstrap = "5.3.8"
 
 [libraries]
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
