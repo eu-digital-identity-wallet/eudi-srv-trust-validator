@@ -19,16 +19,24 @@ import arrow.core.NonEmptyList
 import arrow.core.toNonEmptyListOrNull
 import eu.europa.ec.eudi.etsi119602.consultation.ContinueOnProblem
 import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTEAndPointers
-import eu.europa.ec.eudi.etsi1196x2.consultation.*
+import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContextF
+import eu.europa.ec.eudi.etsi1196x2.consultation.SensitiveApi
+import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
+import eu.europa.ec.eudi.etsi1196x2.consultation.cached
+import eu.europa.ec.eudi.etsi1196x2.consultation.dss.ConcurrentCacheDataLoader
+import eu.europa.ec.eudi.etsi1196x2.consultation.dss.DssOptions
+import eu.europa.ec.eudi.etsi1196x2.consultation.dss.GetTrustAnchorsFromLoTL
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustValidatorUi
-import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.and
+import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.empty
 import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.or
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
-import eu.europa.ec.eudi.trustvalidator.config.*
+import eu.europa.ec.eudi.trustvalidator.config.TrustValidatorConfigurationProperties
+import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingKeyStore
+import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingLoTE
+import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingLoTL
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
-import eu.europa.esig.dss.tsl.source.LOTLSource
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -46,9 +54,12 @@ import org.springframework.security.config.web.server.invoke
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.reactive.CorsConfigurationSource
 import java.security.cert.TrustAnchor
+import java.security.cert.X509Certificate
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 @OptIn(SensitiveApi::class)
 internal class TrustValidatorServiceContext : BeanRegistrarDsl({
@@ -56,13 +67,30 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
 
     registerBean(name = "dss-executor", infrastructure = true, autowirable = false) { Executors.newCachedThreadPool() }
 
-    registerBean(name = "get-trust-anchors-using-lotl", infrastructure = true, autowirable = false) {
+    registerBean(name = "get-trust-anchors-from-lotl", infrastructure = true, autowirable = false) {
         val config = bean<TrustValidatorConfigurationProperties>()
-        config.trustSources?.getTrustAnchorsUsingLoTL(
-            clock = bean(),
-            cacheDirectory = config.dss.cacheLocation,
-            executorService = bean<ExecutorService>("dss-executor"),
-        ) ?: GetTrustAnchors { null }
+        GetTrustAnchorsFromLoTL(
+            DssOptions(
+                loader = ConcurrentCacheDataLoader(
+                    DssOptions.DefaultHttpLoader,
+                    24.hours,
+                    config.dss.cacheLocation,
+                ),
+                executorService = bean<ExecutorService>("dss-executor"),
+            ),
+        ).cached(clock = bean(), ttl = 10.minutes, expectedQueries = 50)
+    }
+
+    registerBean(name = "is-chain-trusted-using-lotl", infrastructure = true, autowirable = false) {
+        val config = bean<TrustValidatorConfigurationProperties>()
+        config.trustSources?.isChainTrustedForContextUsingLoTL(bean("get-trust-anchors-from-lotl")) ?: IsChainTrustedForContextF.empty()
+    }
+
+    registerBean(name = "is-chain-trusted-using-keyStore", infrastructure = true, autowirable = false) {
+        val config = bean<TrustValidatorConfigurationProperties>()
+        runBlocking {
+            config.trustSources?.isChainTrustedForContextUsingKeyStore()
+        } ?: IsChainTrustedForContextF.empty()
     }
 
     registerBean(infrastructure = true) {
@@ -79,38 +107,30 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
         }
     }
 
-    registerBean(name = "get-trust-anchors-using-lote", infrastructure = true, autowirable = false) {
+    registerBean(name = "is-chain-trusted-using-lote", infrastructure = true, autowirable = false) {
         val config = bean<TrustValidatorConfigurationProperties>()
-        val constraints = LoadLoTEAndPointers.Constraints(
-            otherLoTEParallelism = 2,
-            maxDepth = 1,
-            maxLists = 50,
-        )
         runBlocking {
-            config.trustSources?.getTrustAnchorsUsingLoTE(
+            config.trustSources?.isChainTrustedForContextUsingLoTE(
                 httpClient = bean(),
                 continueOnProblem = ContinueOnProblem.Never,
-                constraints = constraints,
+                constraints = LoadLoTEAndPointers.Constraints(
+                    otherLoTEParallelism = 2,
+                    maxDepth = 1,
+                    maxLists = 50,
+                ),
             )
-        } ?: GetTrustAnchorsForSupportedQueries.empty()
+        } ?: IsChainTrustedForContextF.empty()
     }
 
     registerBean {
-        val config = bean<TrustValidatorConfigurationProperties>()
-        val getTrustAnchorsFromLoTL = run {
-            val getTrustAnchorsFromLoTL = bean<GetTrustAnchors<LOTLSource, TrustAnchor>>("get-trust-anchors-using-lotl")
-            val lotlSources = config.trustSources?.lotlSources() ?: emptyMap()
-            GetTrustAnchorsForSupportedQueries.transform(getTrustAnchorsFromLoTL, lotlSources)
-        }
-        val getTrustAnchorsFromLoTE =
-            bean<GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>>("get-trust-anchors-using-lote")
-        val getTrustAnchorsFromKeyStore =
-            config.trustSources?.getTrustAnchorsUsingKeyStore() ?: GetTrustAnchorsForSupportedQueries.empty()
+        val isChainTrustedUsingLoTL =
+            bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-lotl")
+        val isChainTrustedUsingLoTE =
+            bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-lote")
+        val isChainTrustedUsingKeyStore =
+            bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-keyStore")
 
-        IsChainTrustedForEUDIW(
-            ValidateCertificateChainUsingDirectTrustJvm or ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
-            getTrustAnchorsFromLoTL and getTrustAnchorsFromLoTE,
-        ).recoverWith { getTrustAnchorsFromKeyStore }
+        isChainTrustedUsingLoTL or isChainTrustedUsingLoTE or isChainTrustedUsingKeyStore
     }
 
     registerBean<IsChainTrustedUseCase>()
@@ -190,6 +210,3 @@ private fun Environment.getOptionalList(
         ?.filter { filter(it) }
         ?.map { transform(it) }
         ?.toNonEmptyListOrNull()
-
-private fun <CTX : Any, TRUST_ANCHOR : Any> GetTrustAnchorsForSupportedQueries.Companion.empty():
-    GetTrustAnchorsForSupportedQueries<CTX, TRUST_ANCHOR> = GetTrustAnchorsForSupportedQueries(emptySet()) { null }

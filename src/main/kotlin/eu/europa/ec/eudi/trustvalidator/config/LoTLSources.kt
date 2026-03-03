@@ -15,47 +15,34 @@
  */
 package eu.europa.ec.eudi.trustvalidator.config
 
-import eu.europa.ec.eudi.etsi1196x2.consultation.GetTrustAnchors
-import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
-import eu.europa.ec.eudi.etsi1196x2.consultation.cached
-import eu.europa.ec.eudi.etsi1196x2.consultation.dss.DssOptions
-import eu.europa.ec.eudi.etsi1196x2.consultation.dss.GetTrustAnchorsFromLoTL
+import eu.europa.ec.eudi.etsi1196x2.consultation.*
+import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.or
 import eu.europa.esig.dss.spi.x509.KeyStoreCertificateSource
 import eu.europa.esig.dss.tsl.function.GrantedOrRecognizedAtNationalLevelTrustAnchorPeriodPredicate
 import eu.europa.esig.dss.tsl.source.LOTLSource
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.URL
-import java.nio.file.Path
 import java.security.cert.TrustAnchor
-import java.util.concurrent.ExecutorService
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
+import java.security.cert.X509Certificate
 
-private val log = LoggerFactory.getLogger("getTrustAnchorsUsingLoTL")
+private val log = LoggerFactory.getLogger("isChainTrustedForContextUsingLoTL")
 
-fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingLoTL(
-    clock: Clock,
-    cacheDirectory: Path,
-    executorService: ExecutorService,
-): GetTrustAnchors<LOTLSource, TrustAnchor>? =
+fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTL(
+    getTrustAnchorsFromLoTL: GetTrustAnchors<LOTLSource, TrustAnchor>,
+): IsChainTrustedForContext<List<X509Certificate>, VerificationContext, TrustAnchor>? =
     lotlSources().takeIf { it.isNotEmpty() }
-        ?.let { queryPerVerificationContext ->
-            queryPerVerificationContext.entries.forEach { (context, lotl) ->
-                log.info("Configured VerificationContext $context using LoTL ${lotl.url}")
-            }
+        ?.let { lotlSources ->
+            log.info(lotlSources)
 
-            GetTrustAnchorsFromLoTL(
-                DssOptions.usingFileCacheDataLoader(
-                    fileCacheExpiration = 24.hours,
-                    cacheDirectory = cacheDirectory,
-                    executorService = executorService,
-                ),
-            ).cached(clock = clock, ttl = 10.minutes, expectedQueries = queryPerVerificationContext.size)
+            getTrustAnchorsFromLoTL.validator(
+                lotlSources,
+                ValidateCertificateChainUsingDirectTrustJvm or ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
+            )
         }
 
-fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationContext, LOTLSource> =
+private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationContext, LOTLSource> =
     buildMap {
         // Wallet Providers
         if (null != walletProviders && null != walletProviders.lotl) {
@@ -132,3 +119,9 @@ private fun lotlSourceOf(
             }
         }
     }
+
+private fun Logger.info(lotlSources: Map<VerificationContext, LOTLSource>) {
+    lotlSources.entries.forEach { (context, lotl) ->
+        info("Configured VerificationContext $context using LoTL ${lotl.url}")
+    }
+}

@@ -27,17 +27,18 @@ import io.ktor.client.statement.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.cert.TrustAnchor
+import java.security.cert.X509Certificate
 
 private val log = LoggerFactory.getLogger("getTrustAnchorsUsingLoTE")
 
 private typealias LoteLocations = SupportedLists<URI>
-private typealias LoteServices = SupportedLists<Map<VerificationContext, URI>>
+private typealias LoteServices = SupportedLists<LotEMata<VerificationContext>>
 
-suspend fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingLoTE(
+suspend fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
     httpClient: HttpClient,
     continueOnProblem: ContinueOnProblem = ContinueOnProblem.Never,
     constraints: LoadLoTEAndPointers.Constraints,
-): GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>? =
+): ComposeChainTrust<List<X509Certificate>, VerificationContext, TrustAnchor>? =
     loteSources()?.let { (locations, services) ->
         log.info(locations)
         val provisionTrustAnchorsFromLOTE = run {
@@ -59,7 +60,11 @@ suspend fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingLoTE(
                 loadLoteAndPointers,
                 services,
                 continueOnProblem = continueOnProblem,
-                createTrustAnchor = { TrustAnchor(it.x509Certificate(), null) },
+                createTrustAnchors = { serviceDigitalIdentity ->
+                    serviceDigitalIdentity.x509Certificates.orEmpty().map { TrustAnchor(it.x509Certificate(), null) }
+                },
+                directTrust = ValidateCertificateChainUsingDirectTrustJvm,
+                pkix = ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
             )
         }
 
@@ -90,45 +95,66 @@ private fun TrustSourcesConfigurationProperties.loteLocations(): LoteLocations =
 private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
     LoteServices(
         pidProviders = pidProviders?.lote?.let {
-            mapOf(
-                VerificationContext.PID to it.issuanceService.toString(),
-                VerificationContext.PIDStatus to it.revocationService.toString(),
+            LotEMata(
+                mapOf(
+                    VerificationContext.PID to it.issuanceService.toString(),
+                    VerificationContext.PIDStatus to it.revocationService.toString(),
+                ),
+                true,
             )
         },
         walletProviders = walletProviders?.lote?.let {
-            mapOf(
-                VerificationContext.WalletInstanceAttestation to it.issuanceService.toString(),
-                VerificationContext.WalletUnitAttestation to it.issuanceService.toString(),
-                VerificationContext.WalletUnitAttestationStatus to it.revocationService.toString(),
+            LotEMata(
+                mapOf(
+                    VerificationContext.WalletInstanceAttestation to it.issuanceService.toString(),
+                    VerificationContext.WalletUnitAttestation to it.issuanceService.toString(),
+                    VerificationContext.WalletUnitAttestationStatus to it.revocationService.toString(),
+                ),
+                true,
             )
         },
         wrpacProviders = wrpacProviders?.lote?.let {
-            mapOf(
-                VerificationContext.WalletRelyingPartyAccessCertificate to it.issuanceService.toString(),
+            LotEMata(
+                mapOf(
+                    VerificationContext.WalletRelyingPartyAccessCertificate to it.issuanceService.toString(),
+                ),
+                false,
             )
         },
         wrprcProviders = wrprcProviders?.lote?.let {
-            mapOf(
-                VerificationContext.WalletRelyingPartyRegistrationCertificate to it.issuanceService.toString(),
+            LotEMata(
+                mapOf(
+                    VerificationContext.WalletRelyingPartyRegistrationCertificate to it.issuanceService.toString(),
+                ),
+                false,
             )
         },
         pubEaaProviders = pubEaaProviders?.lote?.let {
-            mapOf(
-                VerificationContext.PubEAA to it.issuanceService.toString(),
-                VerificationContext.PubEAAStatus to it.revocationService.toString(),
+            LotEMata(
+                mapOf(
+                    VerificationContext.PubEAA to it.issuanceService.toString(),
+                    VerificationContext.PubEAAStatus to it.revocationService.toString(),
+                ),
+                true,
             )
         },
         qeaProviders = qeaaProviders?.lote?.let {
-            mapOf(
-                VerificationContext.QEAA to it.issuanceService.toString(),
-                VerificationContext.QEAAStatus to it.revocationService.toString(),
+            LotEMata(
+                mapOf(
+                    VerificationContext.QEAA to it.issuanceService.toString(),
+                    VerificationContext.QEAAStatus to it.revocationService.toString(),
+                ),
+                true,
             )
         },
         eaaProviders = eaaProviders?.mapNotNull { eaaProvider ->
             eaaProvider.lote?.let {
-                eaaProvider.useCase to mapOf(
-                    VerificationContext.EAA(eaaProvider.useCase) to it.issuanceService.toString(),
-                    VerificationContext.EAAStatus(eaaProvider.useCase) to it.revocationService.toString(),
+                eaaProvider.useCase to LotEMata(
+                    mapOf(
+                        VerificationContext.EAA(eaaProvider.useCase) to it.issuanceService.toString(),
+                        VerificationContext.EAAStatus(eaaProvider.useCase) to it.revocationService.toString(),
+                    ),
+                    true,
                 )
             }
         }?.toMap().orEmpty(),

@@ -15,82 +15,86 @@
  */
 package eu.europa.ec.eudi.trustvalidator.config
 
-import eu.europa.ec.eudi.etsi1196x2.consultation.GetTrustAnchorsForSupportedQueries
-import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
-import eu.europa.ec.eudi.etsi1196x2.consultation.usingKeyStore
-import kotlinx.coroutines.CoroutineDispatcher
+import eu.europa.ec.eudi.etsi1196x2.consultation.*
+import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.or
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.KeyStore
 import java.security.cert.TrustAnchor
+import java.security.cert.X509Certificate
 
-private val log = LoggerFactory.getLogger("getTrustAnchorsUsingKeyStore")
+private val log = LoggerFactory.getLogger("isChainTrustedForContextUsingKeyStore")
 
-fun TrustSourcesConfigurationProperties.getTrustAnchorsUsingKeyStore():
-    GetTrustAnchorsForSupportedQueries<VerificationContext, TrustAnchor>? =
-    keyStore?.let { keyStoreConfig ->
-        val queryPerVerificationContext = keyStoreSources()
-            .also {
-                it.keys.forEach { context -> log.info("Configured VerificationContext $context using KeyStore") }
-            }
+suspend fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingKeyStore():
+    IsChainTrustedForContext<List<X509Certificate>, VerificationContext, TrustAnchor>? =
+    keyStore?.let {
+        val supportedVerificationContexts = configuredVerificationContexts()
+        log.info(supportedVerificationContexts)
 
-        GetTrustAnchorsForSupportedQueries.usingKeyStore(
-            keystore = loadKeyStore(keyStoreConfig),
-            queryPerVerificationContext = queryPerVerificationContext,
+        IsChainTrustedForContext.usingKeyStore(
+            keystore = loadKeyStore(it),
+            supportedVerificationContexts = supportedVerificationContexts,
+            validateCertificateChain = ValidateCertificateChainUsingDirectTrustJvm or ValidateCertificateChainUsingPKIXJvm {
+                isRevocationEnabled = false
+            },
+            regexPerVerificationContext = { "^.*$".toRegex() },
         )
     }
 
-private fun TrustSourcesConfigurationProperties.keyStoreSources(): Map<VerificationContext, Regex> =
-    buildMap {
-        val regex = "^.*$".toRegex()
+private fun TrustSourcesConfigurationProperties.configuredVerificationContexts(): Set<VerificationContext> =
+    buildSet {
+        fun TrustedListsConfigurationProperties?.isConfigured(): Boolean = null != this && (null != lotl || null != lote)
+        fun EAALoTLConfigurationProperties.isConfigured(): Boolean = null != lotl || null != lote
 
-        // Wallet Providers
-        put(VerificationContext.WalletInstanceAttestation, regex)
-        put(VerificationContext.WalletUnitAttestation, regex)
-        put(VerificationContext.WalletUnitAttestationStatus, regex)
-
-        // PID Providers
-        put(VerificationContext.PID, regex)
-        put(VerificationContext.PIDStatus, regex)
-
-        // QEAA Providers
-        put(VerificationContext.QEAA, regex)
-        put(VerificationContext.QEAAStatus, regex)
-
-        // PubEAA Providers
-        put(VerificationContext.PubEAA, regex)
-        put(VerificationContext.PubEAAStatus, regex)
-
-        // EAA Providers
-        if (!eaaProviders.isNullOrEmpty()) {
-            eaaProviders.forEach { eaaProvider ->
-                put(VerificationContext.EAA(eaaProvider.useCase), regex)
-                put(VerificationContext.EAAStatus(eaaProvider.useCase), regex)
-            }
+        if (walletProviders.isConfigured()) {
+            add(VerificationContext.WalletInstanceAttestation)
+            add(VerificationContext.WalletUnitAttestation)
+            add(VerificationContext.WalletUnitAttestationStatus)
         }
 
-        // Wallet Relying Party Access Certificate Providers
-        put(VerificationContext.WalletRelyingPartyAccessCertificate, regex)
+        if (pidProviders.isConfigured()) {
+            add(VerificationContext.PID)
+            add(VerificationContext.PIDStatus)
+        }
 
-        // Wallet Relying Party Registration Certificate Providers
-        put(VerificationContext.WalletRelyingPartyRegistrationCertificate, regex)
+        if (qeaaProviders.isConfigured()) {
+            add(VerificationContext.QEAA)
+            add(VerificationContext.QEAAStatus)
+        }
+
+        if (pubEaaProviders.isConfigured()) {
+            add(VerificationContext.PubEAA)
+            add(VerificationContext.PubEAAStatus)
+        }
+
+        eaaProviders.orEmpty()
+            .filter { it.isConfigured() }
+            .forEach { eaaProvider ->
+                add(VerificationContext.EAA(eaaProvider.useCase))
+                add(VerificationContext.EAAStatus(eaaProvider.useCase))
+            }
+
+        if (wrpacProviders.isConfigured()) {
+            add(VerificationContext.WalletRelyingPartyAccessCertificate)
+        }
+
+        if (wrprcProviders.isConfigured()) {
+            add(VerificationContext.WalletRelyingPartyRegistrationCertificate)
+        }
     }
 
-private fun loadKeyStore(config: KeyStoreConfigurationProperties): KeyStore =
-    KeyStore.getInstance(config.keyStoreType)
-        .apply {
-            config.location.inputStream.use {
-                load(it, (config.password?.value ?: "").toCharArray())
+private suspend fun loadKeyStore(config: KeyStoreConfigurationProperties): KeyStore =
+    withContext(Dispatchers.IO) {
+        KeyStore.getInstance(config.keyStoreType)
+            .apply {
+                config.location.inputStream.use {
+                    load(it, (config.password?.value ?: "").toCharArray())
+                }
             }
-        }
+    }
 
-private fun <CTX : Any> GetTrustAnchorsForSupportedQueries.Companion.usingKeyStore(
-    dispatcher: CoroutineDispatcher = Dispatchers.IO,
-    keystore: KeyStore,
-    queryPerVerificationContext: Map<CTX, Regex>,
-): GetTrustAnchorsForSupportedQueries<CTX, TrustAnchor> =
-    GetTrustAnchorsForSupportedQueries.usingKeyStore(
-        dispatcher,
-        keystore,
-        queryPerVerificationContext.keys,
-    ) { checkNotNull(queryPerVerificationContext[it]) }
+private fun Logger.info(configuredVerificationContext: Set<VerificationContext>) {
+    configuredVerificationContext.forEach { context -> info("Configured VerificationContext $context using KeyStore") }
+}

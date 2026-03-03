@@ -11,7 +11,7 @@ arrow = "2.2.1.1"
 dependencycheck = "12.1.1"
 swaggerUi = "5.31.0"
 kover = "0.9.4"
-consultation = "0.3.0-alpha.1-SNAPSHOT"
+consultation = "0.3.0-alpha.2-SNAPSHOT"
 ktor = "3.4.0"
 bootstrap = "5.3.3"
 
