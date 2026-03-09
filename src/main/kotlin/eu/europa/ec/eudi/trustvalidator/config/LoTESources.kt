@@ -27,6 +27,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import java.nio.file.Path as JavaPath
@@ -41,6 +42,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
     scope: DisposableScope,
     cacheDirectory: JavaPath,
     httpClient: HttpClient,
+    clock: Clock,
     continueOnProblem: ContinueOnProblem = ContinueOnProblem.Never,
     constraints: LoadLoTEAndPointers.Constraints,
 ): ComposeChainTrust<List<X509Certificate>, VerificationContext, TrustAnchor>? =
@@ -55,6 +57,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
                         cacheDirectory = KotlinXPath(cacheDirectory.toString()),
                         downloadSingleLoTE = DownloadSingleLoTE(httpClient),
                         fileCacheExpiration = 24.hours,
+                        clock = clock,
                     ),
                 ),
                 createTrustAnchors = { serviceDigitalIdentity ->

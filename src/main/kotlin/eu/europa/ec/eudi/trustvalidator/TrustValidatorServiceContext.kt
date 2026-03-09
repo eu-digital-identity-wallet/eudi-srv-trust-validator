@@ -101,6 +101,7 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
             bean(),
             config.lote.cacheLocation,
             bean(),
+            bean(),
             ContinueOnProblem.Never,
             LoadLoTEAndPointers.Constraints.LoadOtherPointers(
                 otherLoTEParallelism = 2,
