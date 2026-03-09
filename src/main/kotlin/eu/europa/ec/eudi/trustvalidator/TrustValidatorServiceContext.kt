@@ -19,6 +19,8 @@ import arrow.core.NonEmptyList
 import arrow.core.toNonEmptyListOrNull
 import eu.europa.ec.eudi.etsi119602.consultation.ContinueOnProblem
 import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTEAndPointers
+import eu.europa.ec.eudi.etsi1196x2.consultation.DisposableContainer
+import eu.europa.ec.eudi.etsi1196x2.consultation.DisposableScope
 import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContextF
 import eu.europa.ec.eudi.etsi1196x2.consultation.SensitiveApi
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
@@ -44,6 +46,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.springframework.beans.factory.BeanRegistrarDsl
+import org.springframework.beans.factory.DisposableBean
 import org.springframework.boot.http.codec.CodecCustomizer
 import org.springframework.core.env.Environment
 import org.springframework.core.env.getProperty
@@ -65,11 +68,14 @@ import kotlin.time.Duration.Companion.minutes
 internal class TrustValidatorServiceContext : BeanRegistrarDsl({
     registerBean { Clock.System }
 
+    registerBean(infrastructure = true, autowirable = false) { SpringDisposableContainer() }
+
     registerBean(name = "dss-executor", infrastructure = true, autowirable = false) { Executors.newCachedThreadPool() }
 
     registerBean(name = "get-trust-anchors-from-lotl", infrastructure = true, autowirable = false) {
         val config = bean<TrustValidatorConfigurationProperties>()
-        GetTrustAnchorsFromLoTL(
+        val scope = bean<DisposableScope>()
+        val getTrustAnchorsFromLoTL = GetTrustAnchorsFromLoTL(
             DssOptions(
                 loader = ConcurrentCacheDataLoader(
                     DssOptions.DefaultHttpLoader,
@@ -79,6 +85,9 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
                 executorService = bean<ExecutorService>("dss-executor"),
             ),
         ).cached(clock = bean(), ttl = 10.minutes, expectedQueries = 50)
+        with(scope) {
+            getTrustAnchorsFromLoTL.bind()
+        }
     }
 
     registerBean(name = "is-chain-trusted-using-lotl", infrastructure = true, autowirable = false) {
@@ -109,17 +118,17 @@ internal class TrustValidatorServiceContext : BeanRegistrarDsl({
 
     registerBean(name = "is-chain-trusted-using-lote", infrastructure = true, autowirable = false) {
         val config = bean<TrustValidatorConfigurationProperties>()
-        runBlocking {
-            config.trustSources?.isChainTrustedForContextUsingLoTE(
-                httpClient = bean(),
-                continueOnProblem = ContinueOnProblem.Never,
-                constraints = LoadLoTEAndPointers.Constraints(
-                    otherLoTEParallelism = 2,
-                    maxDepth = 1,
-                    maxLists = 50,
-                ),
-            )
-        } ?: IsChainTrustedForContextF.empty()
+        config.trustSources?.isChainTrustedForContextUsingLoTE(
+            bean(),
+            config.lote.cacheLocation,
+            bean(),
+            ContinueOnProblem.Never,
+            LoadLoTEAndPointers.Constraints.LoadOtherPointers(
+                otherLoTEParallelism = 2,
+                maxDepth = 1,
+                maxLists = 50,
+            ),
+        ) ?: IsChainTrustedForContextF.empty()
     }
 
     registerBean {
@@ -210,3 +219,9 @@ private fun Environment.getOptionalList(
         ?.filter { filter(it) }
         ?.map { transform(it) }
         ?.toNonEmptyListOrNull()
+
+private class SpringDisposableContainer : DisposableContainer(), DisposableBean {
+    override fun destroy() {
+        dispose()
+    }
+}

@@ -98,6 +98,11 @@ Default value: `3600`
 Variable: `TRUST_VALIDATOR_DSS_CACHE_LOCATION`  
 Description: Path to the directory where DSS will cache LoTLs
 
+### LoTE Configuration
+
+Variable: `TRUST_VALIDATOR_LOTE_CACHE_LOCATION`  
+Description: Path to the directory where downloaded LoTEs will be cached
+
 > [!IMPORTANT]
 > 
 > Each Trust Source can be configured to use Trust Anchors either:

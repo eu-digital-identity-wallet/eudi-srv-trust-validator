@@ -15,7 +15,6 @@
  */
 package eu.europa.ec.eudi.trustvalidator.config
 
-import arrow.core.raise.catch
 import eu.europa.ec.eudi.etsi119602.URI
 import eu.europa.ec.eudi.etsi119602.consultation.*
 import eu.europa.ec.eudi.etsi119602.x509Certificate
@@ -28,47 +27,48 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import java.nio.file.Path as JavaPath
+import kotlinx.io.files.Path as KotlinXPath
 
 private val log = LoggerFactory.getLogger("getTrustAnchorsUsingLoTE")
 
 private typealias LoteLocations = SupportedLists<URI>
-private typealias LoteServices = SupportedLists<LotEMata<VerificationContext>>
+private typealias LoteServices = SupportedLists<LotEMata<VerificationContext, X509Certificate>>
 
-suspend fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
+fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
+    scope: DisposableScope,
+    cacheDirectory: JavaPath,
     httpClient: HttpClient,
     continueOnProblem: ContinueOnProblem = ContinueOnProblem.Never,
     constraints: LoadLoTEAndPointers.Constraints,
 ): ComposeChainTrust<List<X509Certificate>, VerificationContext, TrustAnchor>? =
     loteSources()?.let { (locations, services) ->
         log.info(locations)
-        val provisionTrustAnchorsFromLOTE = run {
-            val loadLoteAndPointers = LoadLoTEAndPointers(
-                constraints = constraints,
-                verifyJwtSignature = { VerifyJwtSignature.Outcome.Verified(it) },
-                loadLoTE = { uri ->
-                    catch({
-                        val lote = httpClient.get {
-                            url(uri)
-                            expectSuccess = true
-                        }.bodyAsText()
-                        LoadLoTE.Outcome.Loaded(lote)
-                    }) { error -> LoadLoTE.Outcome.NotFound(error) }
-                },
-            )
-
+        val provisionTrustAnchorsFromLOTE =
             ProvisionTrustAnchorsFromLoTEs(
-                loadLoteAndPointers,
-                services,
-                continueOnProblem = continueOnProblem,
+                LoadLoTEAndPointers(
+                    constraints,
+                    verifyJwtSignature = { VerifyJwtSignature.Outcome.Verified(it) },
+                    LoadSingleLoTEWithFileCache(
+                        cacheDirectory = KotlinXPath(cacheDirectory.toString()),
+                        downloadSingleLoTE = DownloadSingleLoTE(httpClient),
+                        fileCacheExpiration = 24.hours,
+                    ),
+                ),
                 createTrustAnchors = { serviceDigitalIdentity ->
                     serviceDigitalIdentity.x509Certificates.orEmpty().map { TrustAnchor(it.x509Certificate(), null) }
                 },
-                directTrust = ValidateCertificateChainUsingDirectTrustJvm,
-                pkix = ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
+                extractCertificate = { it.trustedCert },
+                getCertInfo = { "Info[subject=${it.subjectX500Principal}-sn=${it.serialNumber}]" },
+                ValidateCertificateChainUsingDirectTrustJvm,
+                ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
+                continueOnProblem,
+                services,
             )
-        }
 
-        provisionTrustAnchorsFromLOTE(locations, 4)
+        provisionTrustAnchorsFromLOTE.cached(scope, locations, ttl = 10.minutes)
     }
 
 private fun TrustSourcesConfigurationProperties.loteSources(): Pair<LoteLocations, LoteServices>? {
@@ -101,6 +101,7 @@ private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
                     VerificationContext.PIDStatus to it.revocationService.toString(),
                 ),
                 true,
+                null,
             )
         },
         walletProviders = walletProviders?.lote?.let {
@@ -111,6 +112,7 @@ private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
                     VerificationContext.WalletUnitAttestationStatus to it.revocationService.toString(),
                 ),
                 true,
+                null,
             )
         },
         wrpacProviders = wrpacProviders?.lote?.let {
@@ -119,6 +121,7 @@ private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
                     VerificationContext.WalletRelyingPartyAccessCertificate to it.issuanceService.toString(),
                 ),
                 false,
+                null,
             )
         },
         wrprcProviders = wrprcProviders?.lote?.let {
@@ -127,6 +130,7 @@ private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
                     VerificationContext.WalletRelyingPartyRegistrationCertificate to it.issuanceService.toString(),
                 ),
                 false,
+                null,
             )
         },
         pubEaaProviders = pubEaaProviders?.lote?.let {
@@ -136,6 +140,7 @@ private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
                     VerificationContext.PubEAAStatus to it.revocationService.toString(),
                 ),
                 true,
+                null,
             )
         },
         qeaProviders = qeaaProviders?.lote?.let {
@@ -145,19 +150,22 @@ private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
                     VerificationContext.QEAAStatus to it.revocationService.toString(),
                 ),
                 true,
+                null,
             )
         },
-        eaaProviders = eaaProviders?.mapNotNull { eaaProvider ->
-            eaaProvider.lote?.let {
-                eaaProvider.useCase to LotEMata(
-                    mapOf(
-                        VerificationContext.EAA(eaaProvider.useCase) to it.issuanceService.toString(),
-                        VerificationContext.EAAStatus(eaaProvider.useCase) to it.revocationService.toString(),
-                    ),
-                    true,
-                )
-            }
-        }?.toMap().orEmpty(),
+        eaaProviders = eaaProviders.orEmpty()
+            .mapNotNull { eaaProvider ->
+                eaaProvider.lote?.let {
+                    eaaProvider.useCase to LotEMata<VerificationContext, X509Certificate>(
+                        mapOf(
+                            VerificationContext.EAA(eaaProvider.useCase) to it.issuanceService.toString(),
+                            VerificationContext.EAAStatus(eaaProvider.useCase) to it.revocationService.toString(),
+                        ),
+                        true,
+                        null,
+                    )
+                }
+            }.toMap(),
     )
 
 private fun SupportedLists<*>.isEmpty(): Boolean =

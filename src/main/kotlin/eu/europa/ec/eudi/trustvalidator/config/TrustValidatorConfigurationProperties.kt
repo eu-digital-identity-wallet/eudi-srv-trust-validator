@@ -24,10 +24,15 @@ import java.nio.file.Path
 @ConfigurationProperties("trust-validator")
 data class TrustValidatorConfigurationProperties(
     val dss: DSSConfigurationProperties,
+    val lote: LoteConfigurationProperties,
     val trustSources: TrustSourcesConfigurationProperties? = null,
 )
 
 data class DSSConfigurationProperties(
+    val cacheLocation: Path,
+)
+
+data class LoteConfigurationProperties(
     val cacheLocation: Path,
 )
 

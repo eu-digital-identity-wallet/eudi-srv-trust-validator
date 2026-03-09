@@ -41,3 +41,6 @@ out/
 
 ### DSS cache ###
 dss-cache
+
+### Lote cache ###
+lote-cache
