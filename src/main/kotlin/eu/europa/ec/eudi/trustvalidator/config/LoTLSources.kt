@@ -16,6 +16,9 @@
 package eu.europa.ec.eudi.trustvalidator.config
 
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
+import eu.europa.ec.eudi.etsi1196x2.consultation.dss.ConcurrentCacheDataLoader
+import eu.europa.ec.eudi.etsi1196x2.consultation.dss.DssOptions
+import eu.europa.ec.eudi.etsi1196x2.consultation.dss.GetTrustAnchorsFromLoTL
 import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.or
 import eu.europa.esig.dss.spi.x509.KeyStoreCertificateSource
 import eu.europa.esig.dss.tsl.function.GrantedOrRecognizedAtNationalLevelTrustAnchorPeriodPredicate
@@ -24,17 +27,38 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.URL
+import java.nio.file.Path
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
+import java.util.concurrent.ExecutorService
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 private val log = LoggerFactory.getLogger("isChainTrustedForContextUsingLoTL")
 
 fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTL(
-    getTrustAnchorsFromLoTL: GetTrustAnchors<LOTLSource, TrustAnchor>,
+    scope: DisposableScope,
+    cacheDirectory: Path,
+    executorService: ExecutorService,
+    clock: Clock,
 ): IsChainTrustedForContext<List<X509Certificate>, VerificationContext, TrustAnchor>? =
     lotlSources().takeIf { it.isNotEmpty() }
         ?.let { lotlSources ->
             log.info(lotlSources)
+
+            val getTrustAnchorsFromLoTL = with(scope) {
+                GetTrustAnchorsFromLoTL(
+                    DssOptions(
+                        loader = ConcurrentCacheDataLoader(
+                            DssOptions.DefaultHttpLoader,
+                            24.hours,
+                            cacheDirectory,
+                        ),
+                        executorService = executorService,
+                    ),
+                ).cached(clock = clock, ttl = 10.minutes, expectedQueries = lotlSources.size).bind()
+            }
 
             getTrustAnchorsFromLoTL.validator(
                 lotlSources,
