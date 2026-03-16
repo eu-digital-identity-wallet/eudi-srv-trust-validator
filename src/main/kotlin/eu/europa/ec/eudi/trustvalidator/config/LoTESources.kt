@@ -17,7 +17,7 @@ package eu.europa.ec.eudi.trustvalidator.config
 
 import eu.europa.ec.eudi.etsi119602.URI
 import eu.europa.ec.eudi.etsi119602.consultation.*
-import eu.europa.ec.eudi.etsi119602.x509Certificate
+import eu.europa.ec.eudi.etsi119602.consultation.eu.ServiceDigitalIdentityCertificateType
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import io.ktor.client.*
 import io.ktor.client.plugins.*
@@ -36,7 +36,7 @@ import kotlinx.io.files.Path as KotlinXPath
 private val log = LoggerFactory.getLogger("getTrustAnchorsUsingLoTE")
 
 private typealias LoteLocations = SupportedLists<URI>
-private typealias LoteServices = SupportedLists<LotEMata<VerificationContext, X509Certificate>>
+private typealias LoteServices = SupportedLists<LotEMeta<VerificationContext>>
 
 fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
     scope: DisposableScope,
@@ -49,8 +49,8 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
     loteSources()?.let { (locations, services) ->
         log.info(locations)
         val provisionTrustAnchorsFromLOTE =
-            ProvisionTrustAnchorsFromLoTEs(
-                LoadLoTEAndPointers(
+            ProvisionTrustAnchorsFromLoTEs.eudiwJvm(
+                loadLoTEAndPointers = LoadLoTEAndPointers(
                     constraints,
                     verifyJwtSignature = { VerifyJwtSignature.Outcome.Verified(it) },
                     LoadSingleLoTEWithFileCache(
@@ -60,15 +60,9 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
                         clock = clock,
                     ),
                 ),
-                createTrustAnchors = { serviceDigitalIdentity ->
-                    serviceDigitalIdentity.x509Certificates.orEmpty().map { TrustAnchor(it.x509Certificate(), null) }
-                },
-                extractCertificate = { it.trustedCert },
-                getCertInfo = { "Info[subject=${it.subjectX500Principal}-sn=${it.serialNumber}]" },
-                ValidateCertificateChainUsingDirectTrustJvm,
-                ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
-                continueOnProblem,
-                services,
+                svcTypePerCtx = services,
+                continueOnProblem = continueOnProblem,
+                pkix = ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
             )
 
         provisionTrustAnchorsFromLOTE.cached(scope, locations, ttl = 10.minutes)
@@ -98,73 +92,73 @@ private fun TrustSourcesConfigurationProperties.loteLocations(): LoteLocations =
 private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
     LoteServices(
         pidProviders = pidProviders?.lote?.let {
-            LotEMata(
+            LotEMeta(
                 mapOf(
                     VerificationContext.PID to it.issuanceService.toString(),
                     VerificationContext.PIDStatus to it.revocationService.toString(),
                 ),
-                true,
+                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
                 null,
             )
         },
         walletProviders = walletProviders?.lote?.let {
-            LotEMata(
+            LotEMeta(
                 mapOf(
                     VerificationContext.WalletInstanceAttestation to it.issuanceService.toString(),
                     VerificationContext.WalletUnitAttestation to it.issuanceService.toString(),
                     VerificationContext.WalletUnitAttestationStatus to it.revocationService.toString(),
                 ),
-                true,
+                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
                 null,
             )
         },
         wrpacProviders = wrpacProviders?.lote?.let {
-            LotEMata(
+            LotEMeta(
                 mapOf(
                     VerificationContext.WalletRelyingPartyAccessCertificate to it.issuanceService.toString(),
                 ),
-                false,
+                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
                 null,
             )
         },
         wrprcProviders = wrprcProviders?.lote?.let {
-            LotEMata(
+            LotEMeta(
                 mapOf(
                     VerificationContext.WalletRelyingPartyRegistrationCertificate to it.issuanceService.toString(),
                 ),
-                false,
+                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
                 null,
             )
         },
         pubEaaProviders = pubEaaProviders?.lote?.let {
-            LotEMata(
+            LotEMeta(
                 mapOf(
                     VerificationContext.PubEAA to it.issuanceService.toString(),
                     VerificationContext.PubEAAStatus to it.revocationService.toString(),
                 ),
-                true,
+                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
                 null,
             )
         },
         qeaProviders = qeaaProviders?.lote?.let {
-            LotEMata(
+            LotEMeta(
                 mapOf(
                     VerificationContext.QEAA to it.issuanceService.toString(),
                     VerificationContext.QEAAStatus to it.revocationService.toString(),
                 ),
-                true,
+                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
                 null,
             )
         },
         eaaProviders = eaaProviders.orEmpty()
             .mapNotNull { eaaProvider ->
                 eaaProvider.lote?.let {
-                    eaaProvider.useCase to LotEMata<VerificationContext, X509Certificate>(
+                    eaaProvider.useCase to LotEMeta(
                         mapOf(
                             VerificationContext.EAA(eaaProvider.useCase) to it.issuanceService.toString(),
                             VerificationContext.EAAStatus(eaaProvider.useCase) to it.revocationService.toString(),
                         ),
-                        true,
+                        ServiceDigitalIdentityCertificateType.EndEntityOrCA,
                         null,
                     )
                 }
