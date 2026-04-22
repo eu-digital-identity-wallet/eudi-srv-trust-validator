@@ -114,6 +114,7 @@ private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationC
         // Wallet Relying Party Registration Certificate Providers
         if (null != wrprcProviders && null != wrprcProviders.lotl) {
             put(VerificationContext.WalletRelyingPartyRegistrationCertificate, wrprcProviders.lotl.issuanceLoTLSource())
+            put(VerificationContext.WalletRelyingPartyRegistrationCertificateStatus, wrprcProviders.lotl.revocationLoTLSource())
         }
     }
 

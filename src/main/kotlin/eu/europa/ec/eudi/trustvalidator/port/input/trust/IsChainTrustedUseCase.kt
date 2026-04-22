@@ -44,6 +44,7 @@ enum class VerificationContextTO {
     EAA,
     EAAStatus,
     WalletRelyingPartyRegistrationCertificate,
+    WalletRelyingPartyRegistrationCertificateStatus,
     WalletRelyingPartyAccessCertificate,
     Custom,
 }
@@ -128,6 +129,8 @@ private fun TrustQueryTO.verificationContext(): Either<ErrorResponseTO.ClientErr
             VerificationContextTO.EAA -> VerificationContext.EAA(useCase())
             VerificationContextTO.EAAStatus -> VerificationContext.EAAStatus(useCase())
             VerificationContextTO.WalletRelyingPartyRegistrationCertificate -> VerificationContext.WalletRelyingPartyRegistrationCertificate
+            VerificationContextTO.WalletRelyingPartyRegistrationCertificateStatus ->
+                VerificationContext.WalletRelyingPartyRegistrationCertificateStatus
             VerificationContextTO.WalletRelyingPartyAccessCertificate -> VerificationContext.WalletRelyingPartyAccessCertificate
             VerificationContextTO.Custom -> VerificationContext.Custom(useCase())
         }
