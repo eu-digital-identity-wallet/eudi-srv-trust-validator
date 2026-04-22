@@ -36,13 +36,13 @@ enum class VerificationContextTO {
     WalletProviderAttestation,
     WalletOrKeyStorageStatus,
 
-    @Deprecated("WalletInstanceAttestation is deprecated per TS3 V1.5")
+    @Deprecated("WalletInstanceAttestation has been deprecated", ReplaceWith("WalletProviderAttestation"))
     WalletInstanceAttestation,
 
-    @Deprecated("WalletUnitAttestation is deprecated per TS3 V1.5")
+    @Deprecated("WalletUnitAttestation has been deprecated", ReplaceWith("WalletProviderAttestation"))
     WalletUnitAttestation,
 
-    @Deprecated("WalletUnitAttestationStatus is deprecated per TS3 V1.5")
+    @Deprecated("WalletUnitAttestationStatus has been deprecated is deprecated", ReplaceWith("WalletOrKeyStorageStatus"))
     WalletUnitAttestationStatus,
     PID,
     PIDStatus,

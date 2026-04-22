@@ -99,9 +99,6 @@
         "enum": [
           "WalletProviderAttestation",
           "WalletOrKeyStorageStatus",
-          "WalletInstanceAttestation",
-          "WalletUnitAttestation",
-          "WalletUnitAttestationStatus",
           "PID",
           "PIDStatus",
           "PubEAA",
