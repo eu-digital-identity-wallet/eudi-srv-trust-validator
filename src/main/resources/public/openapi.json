@@ -109,6 +109,7 @@
           "EAA",
           "EAAStatus",
           "WalletRelyingPartyRegistrationCertificate",
+          "WalletRelyingPartyRegistrationCertificateStatus",
           "WalletRelyingPartyAccessCertificate",
           "Custom"
         ]
