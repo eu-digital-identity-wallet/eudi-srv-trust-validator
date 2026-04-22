@@ -97,6 +97,8 @@
         "type": "string",
         "nullable": false,
         "enum": [
+          "WalletProviderAttestation",
+          "WalletOrKeyStorageStatus",
           "WalletInstanceAttestation",
           "WalletUnitAttestation",
           "WalletUnitAttestationStatus",

@@ -23,6 +23,7 @@ import arrow.core.raise.ensureNotNull
 import eu.europa.ec.eudi.etsi1196x2.consultation.CertificationChainValidation
 import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContextF
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
+import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext.*
 import eu.europa.ec.eudi.trustvalidator.adapter.out.serialization.X509CertificateChainSerializer
 import eu.europa.ec.eudi.trustvalidator.adapter.out.serialization.X509CertificateSerializer
 import kotlinx.serialization.Required
@@ -32,8 +33,16 @@ import java.security.cert.X509Certificate
 
 @Serializable
 enum class VerificationContextTO {
+    WalletProviderAttestation,
+    WalletOrKeyStorageStatus,
+
+    @Deprecated("WalletInstanceAttestation is deprecated per TS3 V1.5")
     WalletInstanceAttestation,
+
+    @Deprecated("WalletUnitAttestation is deprecated per TS3 V1.5")
     WalletUnitAttestation,
+
+    @Deprecated("WalletUnitAttestationStatus is deprecated per TS3 V1.5")
     WalletUnitAttestationStatus,
     PID,
     PIDStatus,
@@ -117,21 +126,22 @@ private fun TrustQueryTO.verificationContext(): Either<ErrorResponseTO.ClientErr
     either {
         fun useCase(): String = ensureNotNull(useCase) { ErrorResponseTO.ClientErrorResponseTO("Missing useCase") }
         when (verificationContext) {
-            VerificationContextTO.WalletInstanceAttestation -> VerificationContext.WalletInstanceAttestation
-            VerificationContextTO.WalletUnitAttestation -> VerificationContext.WalletUnitAttestation
-            VerificationContextTO.WalletUnitAttestationStatus -> VerificationContext.WalletUnitAttestationStatus
-            VerificationContextTO.PID -> VerificationContext.PID
-            VerificationContextTO.PIDStatus -> VerificationContext.PIDStatus
-            VerificationContextTO.PubEAA -> VerificationContext.PubEAA
-            VerificationContextTO.PubEAAStatus -> VerificationContext.PubEAAStatus
-            VerificationContextTO.QEAA -> VerificationContext.QEAA
-            VerificationContextTO.QEAAStatus -> VerificationContext.QEAAStatus
-            VerificationContextTO.EAA -> VerificationContext.EAA(useCase())
-            VerificationContextTO.EAAStatus -> VerificationContext.EAAStatus(useCase())
-            VerificationContextTO.WalletRelyingPartyRegistrationCertificate -> VerificationContext.WalletRelyingPartyRegistrationCertificate
-            VerificationContextTO.WalletRelyingPartyRegistrationCertificateStatus ->
-                VerificationContext.WalletRelyingPartyRegistrationCertificateStatus
-            VerificationContextTO.WalletRelyingPartyAccessCertificate -> VerificationContext.WalletRelyingPartyAccessCertificate
-            VerificationContextTO.Custom -> VerificationContext.Custom(useCase())
+            VerificationContextTO.WalletInstanceAttestation -> WalletInstanceAttestation
+            VerificationContextTO.WalletUnitAttestation -> WalletUnitAttestation
+            VerificationContextTO.WalletUnitAttestationStatus -> WalletUnitAttestationStatus
+            VerificationContextTO.WalletProviderAttestation -> WalletInstanceAttestation
+            VerificationContextTO.WalletOrKeyStorageStatus -> WalletUnitAttestationStatus
+            VerificationContextTO.PID -> PID
+            VerificationContextTO.PIDStatus -> PIDStatus
+            VerificationContextTO.PubEAA -> PubEAA
+            VerificationContextTO.PubEAAStatus -> PubEAAStatus
+            VerificationContextTO.QEAA -> QEAA
+            VerificationContextTO.QEAAStatus -> QEAAStatus
+            VerificationContextTO.EAA -> EAA(useCase())
+            VerificationContextTO.EAAStatus -> EAAStatus(useCase())
+            VerificationContextTO.WalletRelyingPartyRegistrationCertificate -> WalletRelyingPartyRegistrationCertificate
+            VerificationContextTO.WalletRelyingPartyAccessCertificate -> WalletRelyingPartyAccessCertificate
+            VerificationContextTO.WalletRelyingPartyRegistrationCertificateStatus -> WalletRelyingPartyRegistrationCertificateStatus
+            VerificationContextTO.Custom -> Custom(useCase())
         }
     }
