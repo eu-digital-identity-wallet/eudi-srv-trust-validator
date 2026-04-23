@@ -63,7 +63,13 @@ internal class TrustValidatorUi(isChainTrusted: IsChainTrustedUseCase) {
             .renderAndAwait(
                 "trust-validator-certificate-check-form",
                 mapOf(
-                    "verificationContexts" to VerificationContextTO.entries.map { it.name },
+                    "verificationContexts" to VerificationContextTO.entries.filterNot { context ->
+                        context in setOf(
+                            VerificationContextTO.WalletUnitAttestationStatus,
+                            VerificationContextTO.WalletUnitAttestation,
+                            VerificationContextTO.WalletInstanceAttestation,
+                        )
+                    }.map { it.name },
                 ),
             )
     }
