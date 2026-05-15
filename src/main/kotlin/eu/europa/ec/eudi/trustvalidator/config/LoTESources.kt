@@ -18,6 +18,7 @@ package eu.europa.ec.eudi.trustvalidator.config
 import eu.europa.ec.eudi.etsi119602.Uri
 import eu.europa.ec.eudi.etsi119602.consultation.*
 import eu.europa.ec.eudi.etsi119602.consultation.eu.ServiceDigitalIdentityCertificateType
+import eu.europa.ec.eudi.etsi119602.consultation.eu.walletProviderSigningCertificateProfile
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import io.ktor.client.*
 import io.ktor.client.plugins.*
@@ -111,7 +112,7 @@ private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
                 mapOf(
                     VerificationContext.WalletProviderAttestation to LotEMeta.SvcAndEEProfile(
                         Uri(it.issuanceService.toString()),
-                        null,
+                        walletProviderSigningCertificateProfile(),
                     ),
                     VerificationContext.WalletOrKeyStorageStatus to LotEMeta.SvcAndEEProfile(
                         Uri(it.revocationService.toString()),
