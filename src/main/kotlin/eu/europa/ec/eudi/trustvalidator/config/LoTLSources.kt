@@ -73,9 +73,8 @@ private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationC
             val walletProvidersIssuance = walletProviders.lotl.issuanceLoTLSource()
             val walletProvidersRevocation = walletProviders.lotl.revocationLoTLSource()
 
-            put(VerificationContext.WalletInstanceAttestation, walletProvidersIssuance)
-            put(VerificationContext.WalletUnitAttestation, walletProvidersIssuance)
-            put(VerificationContext.WalletUnitAttestationStatus, walletProvidersRevocation)
+            put(VerificationContext.WalletProviderAttestation, walletProvidersIssuance)
+            put(VerificationContext.WalletOrKeyStorageStatus, walletProvidersRevocation)
         }
 
         // PID Providers

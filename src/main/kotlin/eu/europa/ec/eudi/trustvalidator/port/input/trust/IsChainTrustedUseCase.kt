@@ -126,11 +126,11 @@ private fun TrustQueryTO.verificationContext(): Either<ErrorResponseTO.ClientErr
     either {
         fun useCase(): String = ensureNotNull(useCase) { ErrorResponseTO.ClientErrorResponseTO("Missing useCase") }
         when (verificationContext) {
-            VerificationContextTO.WalletInstanceAttestation -> WalletInstanceAttestation
-            VerificationContextTO.WalletUnitAttestation -> WalletUnitAttestation
-            VerificationContextTO.WalletUnitAttestationStatus -> WalletUnitAttestationStatus
-            VerificationContextTO.WalletProviderAttestation -> WalletInstanceAttestation
-            VerificationContextTO.WalletOrKeyStorageStatus -> WalletUnitAttestationStatus
+            VerificationContextTO.WalletInstanceAttestation -> WalletProviderAttestation
+            VerificationContextTO.WalletUnitAttestation -> WalletProviderAttestation
+            VerificationContextTO.WalletUnitAttestationStatus -> WalletOrKeyStorageStatus
+            VerificationContextTO.WalletProviderAttestation -> WalletProviderAttestation
+            VerificationContextTO.WalletOrKeyStorageStatus -> WalletOrKeyStorageStatus
             VerificationContextTO.PID -> PID
             VerificationContextTO.PIDStatus -> PIDStatus
             VerificationContextTO.PubEAA -> PubEAA

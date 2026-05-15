@@ -49,9 +49,8 @@ private fun TrustSourcesConfigurationProperties.configuredVerificationContexts()
         fun EAALoTLConfigurationProperties.isConfigured(): Boolean = null != lotl || null != lote
 
         if (walletProviders.isConfigured()) {
-            add(VerificationContext.WalletInstanceAttestation)
-            add(VerificationContext.WalletUnitAttestation)
-            add(VerificationContext.WalletUnitAttestationStatus)
+            add(VerificationContext.WalletProviderAttestation)
+            add(VerificationContext.WalletOrKeyStorageStatus)
         }
 
         if (pidProviders.isConfigured()) {

@@ -109,15 +109,11 @@ private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
         walletProviders = walletProviders?.lote?.let {
             LotEMeta(
                 mapOf(
-                    VerificationContext.WalletInstanceAttestation to LotEMeta.SvcAndEEProfile(
+                    VerificationContext.WalletProviderAttestation to LotEMeta.SvcAndEEProfile(
                         Uri(it.issuanceService.toString()),
                         null,
                     ),
-                    VerificationContext.WalletUnitAttestation to LotEMeta.SvcAndEEProfile(
-                        Uri(it.issuanceService.toString()),
-                        null,
-                    ),
-                    VerificationContext.WalletUnitAttestationStatus to LotEMeta.SvcAndEEProfile(
+                    VerificationContext.WalletOrKeyStorageStatus to LotEMeta.SvcAndEEProfile(
                         Uri(it.revocationService.toString()),
                         null,
                     ),
@@ -220,9 +216,8 @@ private fun Logger.info(locations: LoteLocations) {
         info(VerificationContext.PIDStatus, it)
     }
     locations.walletProviders?.let {
-        info(VerificationContext.WalletInstanceAttestation, it)
-        info(VerificationContext.WalletUnitAttestation, it)
-        info(VerificationContext.WalletUnitAttestationStatus, it)
+        info(VerificationContext.WalletProviderAttestation, it)
+        info(VerificationContext.WalletOrKeyStorageStatus, it)
     }
     locations.wrpacProviders?.let {
         info(VerificationContext.WalletRelyingPartyAccessCertificate, it)
