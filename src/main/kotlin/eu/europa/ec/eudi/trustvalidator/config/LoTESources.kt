@@ -19,6 +19,7 @@ import eu.europa.ec.eudi.etsi119602.Uri
 import eu.europa.ec.eudi.etsi119602.consultation.*
 import eu.europa.ec.eudi.etsi119602.consultation.eu.ServiceDigitalIdentityCertificateType
 import eu.europa.ec.eudi.etsi119602.consultation.eu.walletProviderSigningCertificateProfile
+import eu.europa.ec.eudi.etsi119602.consultation.eu.wrpAccessCertificateProfile
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import io.ktor.client.*
 import io.ktor.client.plugins.*
@@ -127,10 +128,10 @@ private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
                 mapOf(
                     VerificationContext.WalletRelyingPartyAccessCertificate to LotEMeta.SvcAndEEProfile(
                         Uri(it.issuanceService.toString()),
-                        null,
+                        wrpAccessCertificateProfile(),
                     ),
                 ),
-                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
+                ServiceDigitalIdentityCertificateType.CA,
             )
         },
         wrprcProviders = wrprcProviders?.lote?.let {
