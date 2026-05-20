@@ -18,6 +18,7 @@ package eu.europa.ec.eudi.trustvalidator.config
 import eu.europa.ec.eudi.etsi119602.Uri
 import eu.europa.ec.eudi.etsi119602.consultation.*
 import eu.europa.ec.eudi.etsi119602.consultation.eu.ServiceDigitalIdentityCertificateType
+import eu.europa.ec.eudi.etsi119602.consultation.eu.pidSigningCertificateProfile
 import eu.europa.ec.eudi.etsi119602.consultation.eu.walletProviderSigningCertificateProfile
 import eu.europa.ec.eudi.etsi119602.consultation.eu.wrpAccessCertificateProfile
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
@@ -98,7 +99,7 @@ private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
                 mapOf(
                     VerificationContext.PID to LotEMeta.SvcAndEEProfile(
                         Uri(it.issuanceService.toString()),
-                        null,
+                        pidSigningCertificateProfile(),
                     ),
                     VerificationContext.PIDStatus to LotEMeta.SvcAndEEProfile(
                         Uri(it.revocationService.toString()),
