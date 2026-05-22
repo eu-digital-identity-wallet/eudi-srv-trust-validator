@@ -73,7 +73,7 @@ data class TrustQueryTO(
 data class TrustResponseTO(
     @Required val trusted: Boolean,
     @Serializable(with = X509CertificateSerializer::class) val trustAnchor: X509Certificate?,
-    @Serializable val error: String?,
+    val error: String?,
 ) {
     init {
         require(!trusted || null != trustAnchor)
