@@ -119,6 +119,9 @@
                         <span th:text="${messageKey != null} ? ${#messages.msg(messageKey, messageArgs)} : ${message}">
                             Message
                         </span>
+                        <span th:if="${!success}" th:text="' - ' + ${errorDetails}">
+                            Certification path could not be validated
+                        </span>
                     </div>
 
                     <div class="card" th:if="${success}">

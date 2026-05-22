@@ -170,6 +170,7 @@ private class IsChainTrustedUseCaseWebUiAdapter(private val isChainTrusted: IsCh
                 put("messageKey", "trust.validator.result.success.trusted")
             } else {
                 put("messageKey", "trust.validator.result.error.notTrusted")
+                put("errorDetails", error)
             }
         }
 

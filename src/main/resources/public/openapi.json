@@ -165,6 +165,11 @@
                 "$ref": "#/components/schemas/X509Certificate"
               }
             ]
+          },
+          "error": {
+            "description": "The error message explaining why the X509 certificate chain is not trusted",
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -203,7 +208,8 @@
       "TrustResponseNotTrusted": {
         "description": "X509 certificate chain is not trusted",
         "value": {
-          "trusted": false
+          "trusted": false,
+          "error": "Certification path could not be validated"
         }
       },
       "ErrorResponseMissingUseCase": {

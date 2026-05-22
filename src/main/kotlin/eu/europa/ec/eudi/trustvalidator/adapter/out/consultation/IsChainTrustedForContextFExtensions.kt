@@ -35,4 +35,4 @@ infix fun <CHAIN : Any, CONTEXT : Any, TRUST_ANCHOR : Any> IsChainTrustedForCont
 
 fun <CHAIN : Any, CONTEXT : Any, TRUST_ANCHOR : Any> IsChainTrustedForContextF.Companion.empty():
     IsChainTrustedForContextF<CHAIN, CONTEXT, TRUST_ANCHOR> =
-    IsChainTrustedForContextF { _, _ -> CertificationChainValidation.NotTrusted(IllegalArgumentException("Not trusted")) }
+    IsChainTrustedForContextF { _, _ -> null }

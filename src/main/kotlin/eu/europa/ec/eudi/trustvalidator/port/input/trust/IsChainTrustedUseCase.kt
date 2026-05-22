@@ -73,13 +73,14 @@ data class TrustQueryTO(
 data class TrustResponseTO(
     @Required val trusted: Boolean,
     @Serializable(with = X509CertificateSerializer::class) val trustAnchor: X509Certificate?,
+    @Serializable val error: String?,
 ) {
     init {
         require(!trusted || null != trustAnchor)
     }
     companion object {
-        fun trusted(trustAnchor: X509Certificate) = TrustResponseTO(true, trustAnchor)
-        fun notTrusted() = TrustResponseTO(false, null)
+        fun trusted(trustAnchor: X509Certificate) = TrustResponseTO(true, trustAnchor, null)
+        fun notTrusted(cause: Throwable) = TrustResponseTO(false, null, cause.message)
     }
 }
 
@@ -117,7 +118,7 @@ class IsChainTrustedUseCase(
                     }
                     TrustResponseTO.trusted(trustAnchorCertificate)
                 }
-                is CertificationChainValidation.NotTrusted -> TrustResponseTO.notTrusted()
+                is CertificationChainValidation.NotTrusted -> TrustResponseTO.notTrusted(result.cause)
             }
         }
 }
