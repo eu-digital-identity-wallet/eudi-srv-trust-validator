@@ -25,7 +25,10 @@ infix fun <CHAIN : Any, CONTEXT : Any, TRUST_ANCHOR : Any> IsChainTrustedForCont
 ): IsChainTrustedForContextF<CHAIN, CONTEXT, TRUST_ANCHOR> =
     IsChainTrustedForContextF { chain, context ->
         when (val thisResult = this(chain, context)) {
-            is CertificationChainValidation.Trusted -> thisResult
+            is CertificationChainValidation.Trusted -> {
+                thisResult
+            }
+
             is CertificationChainValidation.NotTrusted, null -> {
                 val otherResult = other(chain, context)
                 otherResult ?: thisResult

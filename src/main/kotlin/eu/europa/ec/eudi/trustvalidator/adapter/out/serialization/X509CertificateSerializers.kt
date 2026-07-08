@@ -28,12 +28,14 @@ import java.security.cert.X509Certificate
 import kotlin.io.encoding.Base64
 
 object X509CertificateSerializer : KSerializer<X509Certificate> {
-
     private val base64 by lazy { Base64.withPadding(Base64.PaddingOption.ABSENT_OPTIONAL) }
 
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("X509Certificate", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: X509Certificate) {
+    override fun serialize(
+        encoder: Encoder,
+        value: X509Certificate,
+    ) {
         val encoded = base64.encode(value.encoded)
         encoder.encodeString(encoded)
     }

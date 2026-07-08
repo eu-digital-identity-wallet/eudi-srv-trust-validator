@@ -28,8 +28,9 @@ import kotlin.time.toJavaDuration
 
 private val log = LoggerFactory.getLogger(CleanupDSSCache::class.java)
 
-class CleanupDSSCache(private val location: Path) : SchedulingConfigurer {
-
+class CleanupDSSCache(
+    private val location: Path,
+) : SchedulingConfigurer {
     override fun configureTasks(taskRegistrar: ScheduledTaskRegistrar) {
         taskRegistrar.addFixedRateTask(interval = 24.hours - 5.minutes, initialDelay = 0.seconds) {
             log.info("Cleaning up DSS cache at $location...")
@@ -38,6 +39,10 @@ class CleanupDSSCache(private val location: Path) : SchedulingConfigurer {
     }
 }
 
-private fun ScheduledTaskRegistrar.addFixedRateTask(interval: Duration, initialDelay: Duration, task: Runnable) {
+private fun ScheduledTaskRegistrar.addFixedRateTask(
+    interval: Duration,
+    initialDelay: Duration,
+    task: Runnable,
+) {
     addFixedRateTask(IntervalTask(task, interval.toJavaDuration(), initialDelay.toJavaDuration()))
 }

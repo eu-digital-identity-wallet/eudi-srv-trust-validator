@@ -15,12 +15,12 @@
  */
 package eu.europa.ec.eudi.trustvalidator.config
 
-import eu.europa.ec.eudi.etsi119602.datamodel.Uri
 import eu.europa.ec.eudi.etsi119602.consultation.*
 import eu.europa.ec.eudi.etsi119602.consultation.eu.ServiceDigitalIdentityCertificateType
 import eu.europa.ec.eudi.etsi119602.consultation.eu.pidSigningCertificateProfile
 import eu.europa.ec.eudi.etsi119602.consultation.eu.walletProviderSigningCertificateProfile
 import eu.europa.ec.eudi.etsi119602.consultation.eu.wrpAccessCertificateProfile
+import eu.europa.ec.eudi.etsi119602.datamodel.Uri
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import io.ktor.client.*
 import io.ktor.client.plugins.*
@@ -53,16 +53,17 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
         log.info(locations)
         val provisionTrustAnchorsFromLOTE =
             ProvisionTrustAnchorsFromLoTEs.eudiwJvm(
-                loadLoTEAndPointers = LoadLoTEAndPointers(
-                    constraints,
-                    verifyJwtSignature = { VerifyJwtSignature.Outcome.Verified(it) },
-                    LoadSingleLoTEWithFileCache(
-                        cacheDirectory = KotlinXPath(cacheDirectory.toString()),
-                        downloadSingleLoTE = DownloadSingleLoTE(httpClient),
-                        fileCacheExpiration = 24.hours,
-                        clock = clock,
+                loadLoTEAndPointers =
+                    LoadLoTEAndPointers(
+                        constraints,
+                        verifyJwtSignature = { VerifyJwtSignature.Outcome.Verified(it) },
+                        LoadSingleLoTEWithFileCache(
+                            cacheDirectory = KotlinXPath(cacheDirectory.toString()),
+                            downloadSingleLoTE = DownloadSingleLoTE(httpClient),
+                            fileCacheExpiration = 24.hours,
+                            clock = clock,
+                        ),
                     ),
-                ),
                 svcTypePerCtx = services,
                 continueOnProblem = continueOnProblem,
                 pkix = ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
@@ -85,119 +86,144 @@ private fun TrustSourcesConfigurationProperties.loteLocations(): LoteLocations =
         wrprcProviders = wrprcProviders?.lote?.location?.let { Uri(it.toExternalForm()) },
         pubEaaProviders = pubEaaProviders?.lote?.location?.let { Uri(it.toExternalForm()) },
         qeaProviders = qeaaProviders?.lote?.location?.let { Uri(it.toExternalForm()) },
-        eaaProviders = eaaProviders?.mapNotNull { eaaProvider ->
-            eaaProvider.lote?.let {
-                eaaProvider.useCase to Uri(it.location.toExternalForm())
-            }
-        }?.toMap().orEmpty(),
+        eaaProviders =
+            eaaProviders
+                ?.mapNotNull { eaaProvider ->
+                    eaaProvider.lote?.let {
+                        eaaProvider.useCase to Uri(it.location.toExternalForm())
+                    }
+                }?.toMap()
+                .orEmpty(),
     )
 
 private fun TrustSourcesConfigurationProperties.loteServices(): LoteServices =
     LoteServices(
-        pidProviders = pidProviders?.lote?.let {
-            LotEMeta(
-                mapOf(
-                    VerificationContext.PID to LotEMeta.SvcAndEEProfile(
-                        Uri(it.issuanceService.toString()),
-                        pidSigningCertificateProfile(),
-                    ),
-                    VerificationContext.PIDStatus to LotEMeta.SvcAndEEProfile(
-                        Uri(it.revocationService.toString()),
-                        null,
-                    ),
-                ),
-                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
-            )
-        },
-        walletProviders = walletProviders?.lote?.let {
-            LotEMeta(
-                mapOf(
-                    VerificationContext.WalletProviderAttestation to LotEMeta.SvcAndEEProfile(
-                        Uri(it.issuanceService.toString()),
-                        walletProviderSigningCertificateProfile(),
-                    ),
-                    VerificationContext.WalletOrKeyStorageStatus to LotEMeta.SvcAndEEProfile(
-                        Uri(it.revocationService.toString()),
-                        null,
-                    ),
-                ),
-                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
-            )
-        },
-        wrpacProviders = wrpacProviders?.lote?.let {
-            LotEMeta(
-                mapOf(
-                    VerificationContext.WalletRelyingPartyAccessCertificate to LotEMeta.SvcAndEEProfile(
-                        Uri(it.issuanceService.toString()),
-                        wrpAccessCertificateProfile(),
-                    ),
-                ),
-                ServiceDigitalIdentityCertificateType.CA,
-            )
-        },
-        wrprcProviders = wrprcProviders?.lote?.let {
-            LotEMeta(
-                mapOf(
-                    VerificationContext.WalletRelyingPartyRegistrationCertificate to LotEMeta.SvcAndEEProfile(
-                        Uri(it.issuanceService.toString()),
-                        null,
-                    ),
-                    VerificationContext.WalletRelyingPartyRegistrationCertificateStatus to LotEMeta.SvcAndEEProfile(
-                        Uri(it.revocationService.toString()),
-                        null,
-                    ),
-                ),
-                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
-            )
-        },
-        pubEaaProviders = pubEaaProviders?.lote?.let {
-            LotEMeta(
-                mapOf(
-                    VerificationContext.PubEAA to LotEMeta.SvcAndEEProfile(
-                        Uri(it.issuanceService.toString()),
-                        null,
-                    ),
-                    VerificationContext.PubEAAStatus to LotEMeta.SvcAndEEProfile(
-                        Uri(it.revocationService.toString()),
-                        null,
-                    ),
-                ),
-                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
-            )
-        },
-        qeaProviders = qeaaProviders?.lote?.let {
-            LotEMeta(
-                mapOf(
-                    VerificationContext.QEAA to LotEMeta.SvcAndEEProfile(
-                        Uri(it.issuanceService.toString()),
-                        null,
-                    ),
-                    VerificationContext.QEAAStatus to LotEMeta.SvcAndEEProfile(
-                        Uri(it.revocationService.toString()),
-                        null,
-                    ),
-                ),
-                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
-            )
-        },
-        eaaProviders = eaaProviders.orEmpty()
-            .mapNotNull { eaaProvider ->
-                eaaProvider.lote?.let {
-                    eaaProvider.useCase to LotEMeta(
-                        mapOf(
-                            VerificationContext.EAA(eaaProvider.useCase) to LotEMeta.SvcAndEEProfile(
+        pidProviders =
+            pidProviders?.lote?.let {
+                LotEMeta(
+                    mapOf(
+                        VerificationContext.PID to
+                            LotEMeta.SvcAndEEProfile(
                                 Uri(it.issuanceService.toString()),
-                                null,
+                                pidSigningCertificateProfile(),
                             ),
-                            VerificationContext.EAAStatus(eaaProvider.useCase) to LotEMeta.SvcAndEEProfile(
+                        VerificationContext.PIDStatus to
+                            LotEMeta.SvcAndEEProfile(
                                 Uri(it.revocationService.toString()),
                                 null,
                             ),
-                        ),
-                        ServiceDigitalIdentityCertificateType.EndEntityOrCA,
-                    )
-                }
-            }.toMap(),
+                    ),
+                    ServiceDigitalIdentityCertificateType.EndEntityOrCA,
+                )
+            },
+        walletProviders =
+            walletProviders?.lote?.let {
+                LotEMeta(
+                    mapOf(
+                        VerificationContext.WalletProviderAttestation to
+                            LotEMeta.SvcAndEEProfile(
+                                Uri(it.issuanceService.toString()),
+                                walletProviderSigningCertificateProfile(),
+                            ),
+                        VerificationContext.WalletOrKeyStorageStatus to
+                            LotEMeta.SvcAndEEProfile(
+                                Uri(it.revocationService.toString()),
+                                null,
+                            ),
+                    ),
+                    ServiceDigitalIdentityCertificateType.EndEntityOrCA,
+                )
+            },
+        wrpacProviders =
+            wrpacProviders?.lote?.let {
+                LotEMeta(
+                    mapOf(
+                        VerificationContext.WalletRelyingPartyAccessCertificate to
+                            LotEMeta.SvcAndEEProfile(
+                                Uri(it.issuanceService.toString()),
+                                wrpAccessCertificateProfile(),
+                            ),
+                    ),
+                    ServiceDigitalIdentityCertificateType.CA,
+                )
+            },
+        wrprcProviders =
+            wrprcProviders?.lote?.let {
+                LotEMeta(
+                    mapOf(
+                        VerificationContext.WalletRelyingPartyRegistrationCertificate to
+                            LotEMeta.SvcAndEEProfile(
+                                Uri(it.issuanceService.toString()),
+                                null,
+                            ),
+                        VerificationContext.WalletRelyingPartyRegistrationCertificateStatus to
+                            LotEMeta.SvcAndEEProfile(
+                                Uri(it.revocationService.toString()),
+                                null,
+                            ),
+                    ),
+                    ServiceDigitalIdentityCertificateType.EndEntityOrCA,
+                )
+            },
+        pubEaaProviders =
+            pubEaaProviders?.lote?.let {
+                LotEMeta(
+                    mapOf(
+                        VerificationContext.PubEAA to
+                            LotEMeta.SvcAndEEProfile(
+                                Uri(it.issuanceService.toString()),
+                                null,
+                            ),
+                        VerificationContext.PubEAAStatus to
+                            LotEMeta.SvcAndEEProfile(
+                                Uri(it.revocationService.toString()),
+                                null,
+                            ),
+                    ),
+                    ServiceDigitalIdentityCertificateType.EndEntityOrCA,
+                )
+            },
+        qeaProviders =
+            qeaaProviders?.lote?.let {
+                LotEMeta(
+                    mapOf(
+                        VerificationContext.QEAA to
+                            LotEMeta.SvcAndEEProfile(
+                                Uri(it.issuanceService.toString()),
+                                null,
+                            ),
+                        VerificationContext.QEAAStatus to
+                            LotEMeta.SvcAndEEProfile(
+                                Uri(it.revocationService.toString()),
+                                null,
+                            ),
+                    ),
+                    ServiceDigitalIdentityCertificateType.EndEntityOrCA,
+                )
+            },
+        eaaProviders =
+            eaaProviders
+                .orEmpty()
+                .mapNotNull { eaaProvider ->
+                    eaaProvider.lote?.let {
+                        eaaProvider.useCase to
+                            LotEMeta(
+                                mapOf(
+                                    VerificationContext.EAA(eaaProvider.useCase) to
+                                        LotEMeta.SvcAndEEProfile(
+                                            Uri(it.issuanceService.toString()),
+                                            null,
+                                        ),
+                                    VerificationContext.EAAStatus(eaaProvider.useCase) to
+                                        LotEMeta.SvcAndEEProfile(
+                                            Uri(it.revocationService.toString()),
+                                            null,
+                                        ),
+                                ),
+                                ServiceDigitalIdentityCertificateType.EndEntityOrCA,
+                            )
+                    }
+                }.toMap(),
     )
 
 private fun SupportedLists<*>.isEmpty(): Boolean =
@@ -210,7 +236,10 @@ private fun SupportedLists<*>.isEmpty(): Boolean =
         eaaProviders.isEmpty()
 
 private fun Logger.info(locations: LoteLocations) {
-    fun info(context: VerificationContext, location: Uri) {
+    fun info(
+        context: VerificationContext,
+        location: Uri,
+    ) {
         info("Configured VerificationContext $context using LoTE $location")
     }
 

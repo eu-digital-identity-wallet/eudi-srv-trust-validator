@@ -43,22 +43,25 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTL(
     executorService: ExecutorService,
     clock: Clock,
 ): IsChainTrustedForContext<List<X509Certificate>, VerificationContext, TrustAnchor>? =
-    lotlSources().takeIf { it.isNotEmpty() }
+    lotlSources()
+        .takeIf { it.isNotEmpty() }
         ?.let { lotlSources ->
             log.info(lotlSources)
 
-            val getTrustAnchorsFromLoTL = with(scope) {
-                GetTrustAnchorsFromLoTL(
-                    DssOptions(
-                        loader = ConcurrentCacheDataLoader(
-                            DssOptions.DefaultHttpLoader,
-                            24.hours,
-                            cacheDirectory,
+            val getTrustAnchorsFromLoTL =
+                with(scope) {
+                    GetTrustAnchorsFromLoTL(
+                        DssOptions(
+                            loader =
+                                ConcurrentCacheDataLoader(
+                                    DssOptions.DefaultHttpLoader,
+                                    24.hours,
+                                    cacheDirectory,
+                                ),
+                            executorService = executorService,
                         ),
-                        executorService = executorService,
-                    ),
-                ).cached(clock = clock, ttl = 10.minutes, expectedQueries = lotlSources.size).bind()
-            }
+                    ).cached(clock = clock, ttl = 10.minutes, expectedQueries = lotlSources.size).bind()
+                }
 
             getTrustAnchorsFromLoTL.validator(
                 lotlSources,
@@ -117,8 +120,7 @@ private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationC
         }
     }
 
-private fun LoTLConfigurationProperties.issuanceLoTLSource(): LOTLSource =
-    lotlSourceOf(location, signatureVerification, issuanceService)
+private fun LoTLConfigurationProperties.issuanceLoTLSource(): LOTLSource = lotlSourceOf(location, signatureVerification, issuanceService)
 
 private fun LoTLConfigurationProperties.revocationLoTLSource(): LOTLSource =
     lotlSourceOf(location, signatureVerification, revocationService)
@@ -134,13 +136,14 @@ private fun lotlSourceOf(
         tlVersions = listOf(5, 6)
         trustServicePredicate = { serviceType.toString() == it.serviceInformation.serviceTypeIdentifier }
         if (null != signatureVerificationKeyStore) {
-            certificateSource = signatureVerificationKeyStore.location.inputStream.use {
-                KeyStoreCertificateSource(
-                    it,
-                    signatureVerificationKeyStore.keyStoreType,
-                    (signatureVerificationKeyStore.password?.value ?: "").toCharArray(),
-                )
-            }
+            certificateSource =
+                signatureVerificationKeyStore.location.inputStream.use {
+                    KeyStoreCertificateSource(
+                        it,
+                        signatureVerificationKeyStore.keyStoreType,
+                        (signatureVerificationKeyStore.password?.value ?: "").toCharArray(),
+                    )
+                }
         }
     }
 

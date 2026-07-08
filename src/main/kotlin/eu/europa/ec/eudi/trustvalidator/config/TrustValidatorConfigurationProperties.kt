@@ -78,7 +78,9 @@ data class KeyStoreConfigurationProperties(
 }
 
 @JvmInline
-value class Password(val value: String) {
+value class Password(
+    val value: String,
+) {
     override fun toString(): String = "Password(REDACTED)"
 }
 

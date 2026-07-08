@@ -36,9 +36,11 @@ suspend fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingKey
         IsChainTrustedForContext.usingKeyStore(
             keystore = loadKeyStore(it),
             supportedVerificationContexts = supportedVerificationContexts,
-            validateCertificateChain = ValidateCertificateChainUsingDirectTrustJvm or ValidateCertificateChainUsingPKIXJvm {
-                isRevocationEnabled = false
-            },
+            validateCertificateChain =
+                ValidateCertificateChainUsingDirectTrustJvm or
+                    ValidateCertificateChainUsingPKIXJvm {
+                        isRevocationEnabled = false
+                    },
             regexPerVerificationContext = { "^.*$".toRegex() },
         )
     }
@@ -46,6 +48,7 @@ suspend fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingKey
 private fun TrustSourcesConfigurationProperties.configuredVerificationContexts(): Set<VerificationContext> =
     buildSet {
         fun TrustedListsConfigurationProperties?.isConfigured(): Boolean = null != this && (null != lotl || null != lote)
+
         fun EAALoTLConfigurationProperties.isConfigured(): Boolean = null != lotl || null != lote
 
         if (walletProviders.isConfigured()) {
@@ -68,7 +71,8 @@ private fun TrustSourcesConfigurationProperties.configuredVerificationContexts()
             add(VerificationContext.PubEAAStatus)
         }
 
-        eaaProviders.orEmpty()
+        eaaProviders
+            .orEmpty()
             .filter { it.isConfigured() }
             .forEach { eaaProvider ->
                 add(VerificationContext.EAA(eaaProvider.useCase))
@@ -86,7 +90,8 @@ private fun TrustSourcesConfigurationProperties.configuredVerificationContexts()
 
 private suspend fun loadKeyStore(config: KeyStoreConfigurationProperties): KeyStore =
     withContext(Dispatchers.IO) {
-        KeyStore.getInstance(config.keyStoreType)
+        KeyStore
+            .getInstance(config.keyStoreType)
             .apply {
                 config.location.inputStream.use {
                     load(it, (config.password?.value ?: "").toCharArray())

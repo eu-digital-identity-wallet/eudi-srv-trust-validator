@@ -63,9 +63,7 @@ data class TrustQueryTO(
     @Required
     @Serializable(with = X509CertificateChainSerializer::class)
     val chain: NonEmptyList<X509Certificate>,
-
     @Required val verificationContext: VerificationContextTO,
-
     val useCase: String? = null,
 )
 
@@ -78,8 +76,10 @@ data class TrustResponseTO(
     init {
         require(!trusted || null != trustAnchor)
     }
+
     companion object {
         fun trusted(trustAnchor: X509Certificate) = TrustResponseTO(true, trustAnchor, null)
+
         fun notTrusted(cause: Throwable) = TrustResponseTO(false, null, cause.message)
     }
 }
@@ -104,21 +104,26 @@ class IsChainTrustedUseCase(
     suspend operator fun invoke(query: TrustQueryTO): Either<ErrorResponseTO, TrustResponseTO> =
         either {
             val verificationContext = query.verificationContext().bind()
-            val result = catch({ isChainTrusted(query.chain, verificationContext) }) { error ->
-                CertificationChainValidation.NotTrusted(error)
-            }
+            val result =
+                catch({ isChainTrusted(query.chain, verificationContext) }) { error ->
+                    CertificationChainValidation.NotTrusted(error)
+                }
             ensureNotNull(result) {
                 ErrorResponseTO.ServerErrorResponseTO("No configuration found for VerificationContext $verificationContext")
             }
 
             when (result) {
                 is CertificationChainValidation.Trusted -> {
-                    val trustAnchorCertificate = ensureNotNull(result.trustAnchor.trustedCert) {
-                        ErrorResponseTO.ServerErrorResponseTO("TrustAnchor was not specified as a X509 Certificate")
-                    }
+                    val trustAnchorCertificate =
+                        ensureNotNull(result.trustAnchor.trustedCert) {
+                            ErrorResponseTO.ServerErrorResponseTO("TrustAnchor was not specified as a X509 Certificate")
+                        }
                     TrustResponseTO.trusted(trustAnchorCertificate)
                 }
-                is CertificationChainValidation.NotTrusted -> TrustResponseTO.notTrusted(result.cause)
+
+                is CertificationChainValidation.NotTrusted -> {
+                    TrustResponseTO.notTrusted(result.cause)
+                }
             }
         }
 }

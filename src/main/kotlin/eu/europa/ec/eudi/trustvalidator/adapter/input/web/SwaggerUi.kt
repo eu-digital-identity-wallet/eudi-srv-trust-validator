@@ -35,20 +35,23 @@ internal class SwaggerUi(
     private val publicResourcesBasePath: String,
     private val webJarResourcesBasePath: String,
 ) {
-    val route: RouterFunction<ServerResponse> = coRouter {
-        GET(SWAGGER_UI, contentType(MediaType.ALL) and accept(MediaType.TEXT_HTML)) {
-            log.info("Displaying Swagger UI")
-            ServerResponse.ok()
-                .contentType(MediaType.TEXT_HTML)
-                .renderAndAwait(
-                    name = "swagger-ui",
-                    model = mapOf(
-                        "publicResourcesBasePath" to publicResourcesBasePath,
-                        "webJarResourcesBasePath" to webJarResourcesBasePath,
-                    ),
-                )
+    val route: RouterFunction<ServerResponse> =
+        coRouter {
+            GET(SWAGGER_UI, contentType(MediaType.ALL) and accept(MediaType.TEXT_HTML)) {
+                log.info("Displaying Swagger UI")
+                ServerResponse
+                    .ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .renderAndAwait(
+                        name = "swagger-ui",
+                        model =
+                            mapOf(
+                                "publicResourcesBasePath" to publicResourcesBasePath,
+                                "webJarResourcesBasePath" to webJarResourcesBasePath,
+                            ),
+                    )
+            }
         }
-    }
 
     companion object {
         const val SWAGGER_UI = "/swagger-ui"

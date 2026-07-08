@@ -29,34 +29,39 @@ import org.springframework.web.reactive.function.server.ServerResponse.status
 internal class TrustApi(
     private val isChainTrusted: IsChainTrustedUseCase,
 ) {
-    val route: RouterFunction<ServerResponse> = coRouter {
-        POST(
-            TRUST,
-            contentType(APPLICATION_JSON) and accept(APPLICATION_JSON),
-            ::trustQuery,
-        )
-    }
+    val route: RouterFunction<ServerResponse> =
+        coRouter {
+            POST(
+                TRUST,
+                contentType(APPLICATION_JSON) and accept(APPLICATION_JSON),
+                ::trustQuery,
+            )
+        }
 
     private suspend fun trustQuery(request: ServerRequest): ServerResponse {
-        val result = either {
-            val trustQuery = catch({ request.awaitBody<TrustQueryTO>() }) {
-                val description = buildString {
-                    append("Request body cannot be parsed")
-                    if (null != it.message) {
-                        append(": ${it.message}")
+        val result =
+            either {
+                val trustQuery =
+                    catch({ request.awaitBody<TrustQueryTO>() }) {
+                        val description =
+                            buildString {
+                                append("Request body cannot be parsed")
+                                if (null != it.message) {
+                                    append(": ${it.message}")
+                                }
+                            }
+                        raise(ErrorResponseTO.ClientErrorResponseTO(description))
                     }
-                }
-                raise(ErrorResponseTO.ClientErrorResponseTO(description))
+                isChainTrusted(trustQuery).bind()
             }
-            isChainTrusted(trustQuery).bind()
-        }
 
         return result.fold(
             {
-                val status = when (it) {
-                    is ErrorResponseTO.ClientErrorResponseTO -> HttpStatus.BAD_REQUEST
-                    is ErrorResponseTO.ServerErrorResponseTO -> HttpStatus.INTERNAL_SERVER_ERROR
-                }
+                val status =
+                    when (it) {
+                        is ErrorResponseTO.ClientErrorResponseTO -> HttpStatus.BAD_REQUEST
+                        is ErrorResponseTO.ServerErrorResponseTO -> HttpStatus.INTERNAL_SERVER_ERROR
+                    }
                 status(status).json().bodyValueAndAwait(it)
             },
             { ok().json().bodyValueAndAwait(it) },

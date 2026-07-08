@@ -30,7 +30,6 @@ import kotlin.test.assertTrue
     ],
 )
 class TrustValidatorServiceApplicationTest {
-
     @Autowired
     lateinit var applicationContext: ApplicationContext
 

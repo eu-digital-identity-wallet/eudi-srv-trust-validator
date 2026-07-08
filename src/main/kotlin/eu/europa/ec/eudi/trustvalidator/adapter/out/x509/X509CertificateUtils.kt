@@ -28,10 +28,12 @@ object X509CertificateUtils {
         return decodeDer(derEncodedCertificate)
     }
 
-    fun decodeDer(der: ByteArray): X509Certificate = der.inputStream()
-        .use {
-            certificateFactory.generateCertificate(it) as X509Certificate
-        }
+    fun decodeDer(der: ByteArray): X509Certificate =
+        der
+            .inputStream()
+            .use {
+                certificateFactory.generateCertificate(it) as X509Certificate
+            }
 
     fun base64Encode(certificate: X509Certificate): String = base64.encode(certificate.encoded)
 }

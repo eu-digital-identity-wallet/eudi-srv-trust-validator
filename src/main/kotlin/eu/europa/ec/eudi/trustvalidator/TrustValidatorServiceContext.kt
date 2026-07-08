@@ -57,129 +57,134 @@ import java.util.concurrent.Executors
 import kotlin.time.Clock
 
 @OptIn(SensitiveApi::class)
-internal class TrustValidatorServiceContext : BeanRegistrarDsl({
-    registerBean { Clock.System }
+internal class TrustValidatorServiceContext :
+    BeanRegistrarDsl({
+        registerBean { Clock.System }
 
-    registerBean(infrastructure = true, autowirable = false) { SpringDisposableContainer() }
+        registerBean(infrastructure = true, autowirable = false) { SpringDisposableContainer() }
 
-    registerBean(name = "dss-executor", infrastructure = true, autowirable = false) { Executors.newCachedThreadPool() }
+        registerBean(name = "dss-executor", infrastructure = true, autowirable = false) { Executors.newCachedThreadPool() }
 
-    registerBean(name = "is-chain-trusted-using-lotl", infrastructure = true, autowirable = false) {
-        val config = bean<TrustValidatorConfigurationProperties>()
-        config.trustSources?.isChainTrustedForContextUsingLoTL(
-            bean(),
-            config.dss.cacheLocation,
-            bean("dss-executor"),
-            bean(),
-        ) ?: IsChainTrustedForContextF.empty()
-    }
-
-    registerBean(name = "is-chain-trusted-using-keyStore", infrastructure = true, autowirable = false) {
-        val config = bean<TrustValidatorConfigurationProperties>()
-        runBlocking {
-            config.trustSources?.isChainTrustedForContextUsingKeyStore()
-        } ?: IsChainTrustedForContextF.empty()
-    }
-
-    registerBean(infrastructure = true) {
-        HttpClient(CIO) {
-            install(ContentNegotiation) {
-                json(
-                    Json {
-                        ignoreUnknownKeys = true
-                        encodeDefaults = false
-                        explicitNulls = false
-                    },
-                )
-            }
+        registerBean(name = "is-chain-trusted-using-lotl", infrastructure = true, autowirable = false) {
+            val config = bean<TrustValidatorConfigurationProperties>()
+            config.trustSources?.isChainTrustedForContextUsingLoTL(
+                bean(),
+                config.dss.cacheLocation,
+                bean("dss-executor"),
+                bean(),
+            ) ?: IsChainTrustedForContextF.empty()
         }
-    }
 
-    registerBean(name = "is-chain-trusted-using-lote", infrastructure = true, autowirable = false) {
-        val config = bean<TrustValidatorConfigurationProperties>()
-        config.trustSources?.isChainTrustedForContextUsingLoTE(
-            bean(),
-            config.lote.cacheLocation,
-            bean(),
-            bean(),
-            ContinueOnProblem.Never,
-            LoadLoTEAndPointers.Constraints.LoadOtherPointers(
-                otherLoTEParallelism = 2,
-                maxDepth = 1,
-                maxLists = 50,
-            ),
-        ) ?: IsChainTrustedForContextF.empty()
-    }
-
-    registerBean {
-        val isChainTrustedUsingLoTL =
-            bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-lotl")
-        val isChainTrustedUsingLoTE =
-            bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-lote")
-        val isChainTrustedUsingKeyStore =
-            bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-keyStore")
-
-        isChainTrustedUsingLoTL or isChainTrustedUsingLoTE or isChainTrustedUsingKeyStore
-    }
-
-    registerBean<IsChainTrustedUseCase>()
-
-    registerBean {
-        val configuration = bean<TrustValidatorConfigurationProperties>()
-        CleanupDSSCache(configuration.dss.cacheLocation)
-    }
-
-    registerBean {
-        val trustApi = TrustApi(bean())
-        val swaggerUi = SwaggerUi(
-            publicResourcesBasePath =
-                env.getRequiredProperty("spring.webflux.static-path-pattern").removeSuffix("/**"),
-            webJarResourcesBasePath =
-                env.getRequiredProperty("spring.webflux.webjars-path-pattern").removeSuffix("/**"),
-        )
-        val trustValidatorUi = TrustValidatorUi(bean())
-        trustApi.route.and(swaggerUi.route).and(trustValidatorUi.route)
-    }
-
-    registerBean {
-        CodecCustomizer {
-            val json = Json {
-                explicitNulls = false
-                ignoreUnknownKeys = true
-            }
-
-            it.defaultCodecs().kotlinSerializationJsonDecoder(KotlinSerializationJsonDecoder(json))
-            it.defaultCodecs().kotlinSerializationJsonEncoder(KotlinSerializationJsonEncoder(json))
-            it.defaultCodecs().enableLoggingRequestDetails(true)
+        registerBean(name = "is-chain-trusted-using-keyStore", infrastructure = true, autowirable = false) {
+            val config = bean<TrustValidatorConfigurationProperties>()
+            runBlocking {
+                config.trustSources?.isChainTrustedForContextUsingKeyStore()
+            } ?: IsChainTrustedForContextF.empty()
         }
-    }
 
-    registerBean {
-        val http = bean<ServerHttpSecurity>()
-        http {
-            cors { // cross-origin resource sharing configuration
-                configurationSource = CorsConfigurationSource {
-                    CorsConfiguration().apply {
-                        fun getOptionalList(name: String): NonEmptyList<String>? =
-                            env.getOptionalList(name = name, filter = { it.isNotBlank() }, transform = { it.trim() })
-
-                        allowedOrigins = getOptionalList("cors.origins")
-                        allowedOriginPatterns = getOptionalList("cors.originPatterns")
-                        allowedMethods = getOptionalList("cors.methods")
-                        run {
-                            val headers = getOptionalList("cors.headers")
-                            allowedHeaders = headers
-                            exposedHeaders = headers
-                        }
-                        allowCredentials = env.getProperty<Boolean>("cors.credentials")
-                        maxAge = env.getProperty<Long>("cors.maxAge")
-                    }
+        registerBean(infrastructure = true) {
+            HttpClient(CIO) {
+                install(ContentNegotiation) {
+                    json(
+                        Json {
+                            ignoreUnknownKeys = true
+                            encodeDefaults = false
+                            explicitNulls = false
+                        },
+                    )
                 }
             }
-            csrf { disable() } // cross-site request forgery disabled
         }
-    }
-})
+
+        registerBean(name = "is-chain-trusted-using-lote", infrastructure = true, autowirable = false) {
+            val config = bean<TrustValidatorConfigurationProperties>()
+            config.trustSources?.isChainTrustedForContextUsingLoTE(
+                bean(),
+                config.lote.cacheLocation,
+                bean(),
+                bean(),
+                ContinueOnProblem.Never,
+                LoadLoTEAndPointers.Constraints.LoadOtherPointers(
+                    otherLoTEParallelism = 2,
+                    maxDepth = 1,
+                    maxLists = 50,
+                ),
+            ) ?: IsChainTrustedForContextF.empty()
+        }
+
+        registerBean {
+            val isChainTrustedUsingLoTL =
+                bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-lotl")
+            val isChainTrustedUsingLoTE =
+                bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-lote")
+            val isChainTrustedUsingKeyStore =
+                bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-keyStore")
+
+            isChainTrustedUsingLoTL or isChainTrustedUsingLoTE or isChainTrustedUsingKeyStore
+        }
+
+        registerBean<IsChainTrustedUseCase>()
+
+        registerBean {
+            val configuration = bean<TrustValidatorConfigurationProperties>()
+            CleanupDSSCache(configuration.dss.cacheLocation)
+        }
+
+        registerBean {
+            val trustApi = TrustApi(bean())
+            val swaggerUi =
+                SwaggerUi(
+                    publicResourcesBasePath =
+                        env.getRequiredProperty("spring.webflux.static-path-pattern").removeSuffix("/**"),
+                    webJarResourcesBasePath =
+                        env.getRequiredProperty("spring.webflux.webjars-path-pattern").removeSuffix("/**"),
+                )
+            val trustValidatorUi = TrustValidatorUi(bean())
+            trustApi.route.and(swaggerUi.route).and(trustValidatorUi.route)
+        }
+
+        registerBean {
+            CodecCustomizer {
+                val json =
+                    Json {
+                        explicitNulls = false
+                        ignoreUnknownKeys = true
+                    }
+
+                it.defaultCodecs().kotlinSerializationJsonDecoder(KotlinSerializationJsonDecoder(json))
+                it.defaultCodecs().kotlinSerializationJsonEncoder(KotlinSerializationJsonEncoder(json))
+                it.defaultCodecs().enableLoggingRequestDetails(true)
+            }
+        }
+
+        registerBean {
+            val http = bean<ServerHttpSecurity>()
+            http {
+                cors {
+                    // cross-origin resource sharing configuration
+                    configurationSource =
+                        CorsConfigurationSource {
+                            CorsConfiguration().apply {
+                                fun getOptionalList(name: String): NonEmptyList<String>? =
+                                    env.getOptionalList(name = name, filter = { it.isNotBlank() }, transform = { it.trim() })
+
+                                allowedOrigins = getOptionalList("cors.origins")
+                                allowedOriginPatterns = getOptionalList("cors.originPatterns")
+                                allowedMethods = getOptionalList("cors.methods")
+                                run {
+                                    val headers = getOptionalList("cors.headers")
+                                    allowedHeaders = headers
+                                    exposedHeaders = headers
+                                }
+                                allowCredentials = env.getProperty<Boolean>("cors.credentials")
+                                maxAge = env.getProperty<Long>("cors.maxAge")
+                            }
+                        }
+                }
+                csrf { disable() } // cross-site request forgery disabled
+            }
+        }
+    })
 
 /**
  * Gets the value of a property that contains a comma-separated list. A list is returned when it contains values.
@@ -194,13 +199,16 @@ private fun Environment.getOptionalList(
     filter: (String) -> Boolean = { true },
     transform: (String) -> String = { it },
 ): NonEmptyList<String>? =
-    this.getProperty(name)
+    this
+        .getProperty(name)
         ?.split(",")
         ?.filter { filter(it) }
         ?.map { transform(it) }
         ?.toNonEmptyListOrNull()
 
-private class SpringDisposableContainer : DisposableContainer(), DisposableBean {
+private class SpringDisposableContainer :
+    DisposableContainer(),
+    DisposableBean {
     override fun destroy() {
         dispose()
     }

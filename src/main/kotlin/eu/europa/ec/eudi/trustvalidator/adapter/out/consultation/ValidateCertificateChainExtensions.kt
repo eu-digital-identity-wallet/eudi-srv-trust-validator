@@ -20,9 +20,10 @@ import eu.europa.ec.eudi.etsi1196x2.consultation.ValidateCertificateChain
 
 infix fun <CHAIN : Any, TRUST_ANCHOR : Any> ValidateCertificateChain<CHAIN, TRUST_ANCHOR>.or(
     other: ValidateCertificateChain<CHAIN, TRUST_ANCHOR>,
-): ValidateCertificateChain<CHAIN, TRUST_ANCHOR> = ValidateCertificateChain { chain, trustAnchors ->
-    when (val thisResult = this(chain, trustAnchors)) {
-        is CertificationChainValidation.Trusted -> thisResult
-        is CertificationChainValidation.NotTrusted -> other(chain, trustAnchors)
+): ValidateCertificateChain<CHAIN, TRUST_ANCHOR> =
+    ValidateCertificateChain { chain, trustAnchors ->
+        when (val thisResult = this(chain, trustAnchors)) {
+            is CertificationChainValidation.Trusted -> thisResult
+            is CertificationChainValidation.NotTrusted -> other(chain, trustAnchors)
+        }
     }
-}
