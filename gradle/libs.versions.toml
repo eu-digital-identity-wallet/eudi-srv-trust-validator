@@ -13,7 +13,7 @@ swagger-ui = "5.32.8"
 kover = "0.9.4"
 consultation = "0.4.0-alpha.1-SNAPSHOT"
 ktor = "3.5.1"
-bootstrap = "5.3.3"
+bootstrap = "5.3.8"
 
 [libraries]
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
