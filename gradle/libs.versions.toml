@@ -9,7 +9,7 @@ java = "25"
 ktlint = "0.50.0"
 arrow = "2.2.3"
 dependencycheck = "12.1.1"
-swaggerUi = "5.31.0"
+swagger-ui = "5.32.8"
 kover = "0.9.4"
 consultation = "0.4.0-alpha.1-SNAPSHOT"
 ktor = "3.5.1"
@@ -29,7 +29,7 @@ kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.
 arrow-stack = { module = "io.arrow-kt:arrow-stack", version.ref = "arrow" }
 arrow-core = { module = "io.arrow-kt:arrow-core" }
 arrow-core-serialization = { module = "io.arrow-kt:arrow-core-serialization" }
-swagger-ui = { module = "org.webjars:swagger-ui", version.ref = "swaggerUi" }
+swagger-ui = { module = "org.webjars:swagger-ui", version.ref = "swagger-ui" }
 consultation-lotl = { module = "eu.europa.ec.eudi:etsi-1196x2-consultation-dss", version.ref = "consultation" }
 consultation-lote = { module = "eu.europa.ec.eudi:etsi-119602-consultation", version.ref = "consultation" }
 dss-tsl-validation = { module = "eu.europa.ec.joinup.sd-dss:dss-tsl-validation" }
