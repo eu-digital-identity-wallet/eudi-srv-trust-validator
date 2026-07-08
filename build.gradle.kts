@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.springframework.boot.gradle.tasks.bundling.BootBuildImage
 
@@ -13,12 +15,6 @@ plugins {
 
 repositories {
     mavenCentral()
-    maven {
-        url = uri("https://central.sonatype.com/repository/maven-snapshots")
-        mavenContent {
-            snapshotsOnly()
-        }
-    }
 }
 
 dependencies {
@@ -64,29 +60,35 @@ dependencies {
 }
 
 kotlin {
-
     jvmToolchain {
         languageVersion = JavaLanguageVersion.of(libs.versions.java.get())
+        vendor = JvmVendorSpec.ADOPTIUM
+        implementation = JvmImplementation.VENDOR_SPECIFIC
     }
 
-    compilerOptions {
-        apiVersion = KotlinVersion.DEFAULT
-        freeCompilerArgs.addAll(
-            "-Xjsr305=strict",
-        )
-        optIn.addAll(
-            "kotlinx.serialization.ExperimentalSerializationApi",
-            "kotlin.io.encoding.ExperimentalEncodingApi",
-            "kotlin.contracts.ExperimentalContracts",
-            "kotlin.time.ExperimentalTime",
-        )
+    target {
+        compilerOptions {
+            javaParameters = true
+            jvmDefault = JvmDefaultMode.ENABLE
+            jvmTarget = JvmTarget.fromTarget(libs.versions.java.get())
+            apiVersion = KotlinVersion.DEFAULT
+            languageVersion = KotlinVersion.DEFAULT
+            optIn.addAll(
+                "kotlinx.serialization.ExperimentalSerializationApi",
+                "kotlin.io.encoding.ExperimentalEncodingApi",
+                "kotlin.contracts.ExperimentalContracts",
+                "kotlin.time.ExperimentalTime",
+            )
+            freeCompilerArgs.addAll(
+                "-Xjsr305=strict",
+                "-Xconsistent-data-class-copy-visibility",
+            )
+        }
     }
 }
 
-tasks {
-    test {
-        useJUnitPlatform()
-    }
+tasks.test {
+    useJUnitPlatform()
 }
 
 springBoot {
@@ -94,19 +96,18 @@ springBoot {
 }
 
 tasks.named<BootBuildImage>("bootBuildImage") {
-    imageName.set("$group/${project.name}")
-    publish.set(false)
-    // get the BP_OCI_* from env, for https://github.com/paketo-buildpacks/image-labels
-    // get the BP_JVM_* from env, jlink optimisation
-    environment.set(System.getenv())
-    val env = environment.get()
+    imageName = "$group/${project.name}"
+    publish = false
+    environment = System.getenv()
+
     docker {
+        val environment = environment.get()
         publishRegistry {
-            env["REGISTRY_URL"]?.let { url = it }
-            env["REGISTRY_USERNAME"]?.let { username = it }
-            env["REGISTRY_PASSWORD"]?.let { password = it }
+            environment["REGISTRY_URL"]?.let { url = it }
+            environment["REGISTRY_USERNAME"]?.let { username = it }
+            environment["REGISTRY_PASSWORD"]?.let { password = it }
         }
-        env["DOCKER_METADATA_OUTPUT_TAGS"]?.let { tagStr ->
+        environment["DOCKER_METADATA_OUTPUT_TAGS"]?.let { tagStr ->
             tags = tagStr.split(delimiters = arrayOf("\n", " ")).onEach { println("Tag: $it") }
         }
     }
@@ -114,10 +115,12 @@ tasks.named<BootBuildImage>("bootBuildImage") {
 
 spotless {
     val ktlintVersion = libs.versions.ktlint.get()
+
     kotlin {
         ktlint(ktlintVersion)
         licenseHeaderFile("FileHeader.txt")
     }
+
     kotlinGradle {
         ktlint(ktlintVersion)
     }
@@ -125,5 +128,9 @@ spotless {
 
 dependencyCheck {
     formats = mutableListOf("XML", "HTML")
-    nvd.apiKey = System.getenv("NVD_API_KEY") ?: properties["nvdApiKey"]?.toString() ?: ""
+    nvd {
+        apiKey = System.getenv("NVD_API_KEY") ?: findProperty("nvdApiKey")?.toString() ?: ""
+        delay = 10000
+        maxRetryCount = 2
+    }
 }
