@@ -2,7 +2,7 @@
 kotlin = "2.4.0"
 kotlinx-serialization = "1.11.0"
 kotlinx-coroutines = "1.11.0"
-kotlinx-datetime = "0.7.1"
+kotlinx-datetime = "0.8.0"
 springboot = "4.0.2"
 spotless = "7.0.2"
 java = "25"
