@@ -73,12 +73,6 @@ kotlin {
             jvmTarget = JvmTarget.fromTarget(libs.versions.java.get())
             apiVersion = KotlinVersion.DEFAULT
             languageVersion = KotlinVersion.DEFAULT
-            optIn.addAll(
-                "kotlinx.serialization.ExperimentalSerializationApi",
-                "kotlin.io.encoding.ExperimentalEncodingApi",
-                "kotlin.contracts.ExperimentalContracts",
-                "kotlin.time.ExperimentalTime",
-            )
             freeCompilerArgs.addAll(
                 "-Xjsr305=strict",
                 "-Xconsistent-data-class-copy-visibility",
