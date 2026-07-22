@@ -17,15 +17,16 @@ package eu.europa.ec.eudi.trustvalidator.port.input.trust
 
 import arrow.core.Either
 import arrow.core.NonEmptyList
+import arrow.core.nonEmptyListOf
 import arrow.core.raise.catch
 import arrow.core.raise.either
 import arrow.core.raise.ensureNotNull
-import eu.europa.ec.eudi.etsi1196x2.consultation.CertificationChainValidation
-import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContextF
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext.*
 import eu.europa.ec.eudi.trustvalidator.adapter.out.serialization.X509CertificateChainSerializer
 import eu.europa.ec.eudi.trustvalidator.adapter.out.serialization.X509CertificateSerializer
+import eu.europa.ec.eudi.trustvalidator.port.out.trust.CertificateChainTrust
+import eu.europa.ec.eudi.trustvalidator.port.out.trust.IsChainTrusted
 import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
 import java.security.cert.TrustAnchor
@@ -80,7 +81,16 @@ data class TrustResponseTO(
     companion object {
         fun trusted(trustAnchor: X509Certificate) = TrustResponseTO(true, trustAnchor, null)
 
-        fun notTrusted(cause: Throwable) = TrustResponseTO(false, null, cause.message)
+        fun notTrusted(reasons: NonEmptyList<Throwable>) =
+            TrustResponseTO(
+                false,
+                null,
+                reasons
+                    .mapNotNull { it.message }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .joinToString(separator = "; "),
+            )
     }
 }
 
@@ -99,21 +109,21 @@ sealed interface ErrorResponseTO {
 }
 
 class IsChainTrustedUseCase(
-    private val isChainTrusted: IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>,
+    private val isChainTrusted: IsChainTrusted<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>,
 ) {
     suspend operator fun invoke(query: TrustQueryTO): Either<ErrorResponseTO, TrustResponseTO> =
         either {
             val verificationContext = query.verificationContext().bind()
             val result =
                 catch({ isChainTrusted(query.chain, verificationContext) }) { error ->
-                    CertificationChainValidation.NotTrusted(error)
+                    CertificateChainTrust.NotTrusted(nonEmptyListOf(error))
                 }
             ensureNotNull(result) {
                 ErrorResponseTO.ServerErrorResponseTO("No configuration found for VerificationContext $verificationContext")
             }
 
             when (result) {
-                is CertificationChainValidation.Trusted -> {
+                is CertificateChainTrust.Trusted -> {
                     val trustAnchorCertificate =
                         ensureNotNull(result.trustAnchor.trustedCert) {
                             ErrorResponseTO.ServerErrorResponseTO("TrustAnchor was not specified as a X509 Certificate")
@@ -121,8 +131,8 @@ class IsChainTrustedUseCase(
                     TrustResponseTO.trusted(trustAnchorCertificate)
                 }
 
-                is CertificationChainValidation.NotTrusted -> {
-                    TrustResponseTO.notTrusted(result.cause)
+                is CertificateChainTrust.NotTrusted -> {
+                    TrustResponseTO.notTrusted(result.reasons)
                 }
             }
         }

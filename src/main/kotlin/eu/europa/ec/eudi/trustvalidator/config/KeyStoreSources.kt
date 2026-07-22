@@ -15,6 +15,7 @@
  */
 package eu.europa.ec.eudi.trustvalidator.config
 
+import arrow.core.NonEmptyList
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.or
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +29,7 @@ import java.security.cert.X509Certificate
 private val log = LoggerFactory.getLogger("isChainTrustedForContextUsingKeyStore")
 
 suspend fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingKeyStore():
-    IsChainTrustedForContext<List<X509Certificate>, VerificationContext, TrustAnchor>? =
+    IsChainTrustedForContext<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     keyStore?.let {
         val supportedVerificationContexts = configuredVerificationContexts()
         log.info(supportedVerificationContexts)

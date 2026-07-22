@@ -15,6 +15,7 @@
  */
 package eu.europa.ec.eudi.trustvalidator.config
 
+import arrow.core.NonEmptyList
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import eu.europa.ec.eudi.etsi1196x2.consultation.dss.ConcurrentCacheDataLoader
 import eu.europa.ec.eudi.etsi1196x2.consultation.dss.DssOptions
@@ -42,7 +43,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTL(
     cacheDirectory: Path,
     executorService: ExecutorService,
     clock: Clock,
-): IsChainTrustedForContext<List<X509Certificate>, VerificationContext, TrustAnchor>? =
+): IsChainTrustedForContext<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     lotlSources()
         .takeIf { it.isNotEmpty() }
         ?.let { lotlSources ->
@@ -72,7 +73,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTL(
 private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationContext, LOTLSource> =
     buildMap {
         // Wallet Providers
-        if (null != walletProviders && null != walletProviders.lotl) {
+        if (walletProviders?.lotl != null) {
             val walletProvidersIssuance = walletProviders.lotl.issuanceLoTLSource()
             val walletProvidersRevocation = walletProviders.lotl.revocationLoTLSource()
 
@@ -81,19 +82,19 @@ private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationC
         }
 
         // PID Providers
-        if (null != pidProviders && null != pidProviders.lotl) {
+        if (pidProviders?.lotl != null) {
             put(VerificationContext.PID, pidProviders.lotl.issuanceLoTLSource())
             put(VerificationContext.PIDStatus, pidProviders.lotl.revocationLoTLSource())
         }
 
         // QEAA Providers
-        if (null != qeaaProviders && null != qeaaProviders.lotl) {
+        if (qeaaProviders?.lotl != null) {
             put(VerificationContext.QEAA, qeaaProviders.lotl.issuanceLoTLSource())
             put(VerificationContext.QEAAStatus, qeaaProviders.lotl.revocationLoTLSource())
         }
 
         // PubEAA Providers
-        if (null != pubEaaProviders && null != pubEaaProviders.lotl) {
+        if (pubEaaProviders?.lotl != null) {
             put(VerificationContext.PubEAA, pubEaaProviders.lotl.issuanceLoTLSource())
             put(VerificationContext.PubEAAStatus, pubEaaProviders.lotl.revocationLoTLSource())
         }
@@ -109,12 +110,12 @@ private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationC
         }
 
         // Wallet Relying Party Access Certificate Providers
-        if (null != wrpacProviders && null != wrpacProviders.lotl) {
+        if (wrpacProviders?.lotl != null) {
             put(VerificationContext.WalletRelyingPartyAccessCertificate, wrpacProviders.lotl.issuanceLoTLSource())
         }
 
         // Wallet Relying Party Registration Certificate Providers
-        if (null != wrprcProviders && null != wrprcProviders.lotl) {
+        if (wrprcProviders?.lotl != null) {
             put(VerificationContext.WalletRelyingPartyRegistrationCertificate, wrprcProviders.lotl.issuanceLoTLSource())
             put(VerificationContext.WalletRelyingPartyRegistrationCertificateStatus, wrprcProviders.lotl.revocationLoTLSource())
         }

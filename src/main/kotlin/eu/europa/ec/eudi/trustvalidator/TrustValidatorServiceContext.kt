@@ -27,8 +27,8 @@ import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustValidatorUi
 import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.empty
-import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.or
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
+import eu.europa.ec.eudi.trustvalidator.adapter.out.trust.IsChainTrusted
 import eu.europa.ec.eudi.trustvalidator.config.TrustValidatorConfigurationProperties
 import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingKeyStore
 import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingLoTE
@@ -116,11 +116,15 @@ internal class TrustValidatorServiceContext :
             val isChainTrustedUsingLoTL =
                 bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-lotl")
             val isChainTrustedUsingLoTE =
-                bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-lote")
+                bean<IsChainTrustedForContextF<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>>(
+                    "is-chain-trusted-using-lote",
+                )
             val isChainTrustedUsingKeyStore =
-                bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-keyStore")
+                bean<IsChainTrustedForContextF<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>>(
+                    "is-chain-trusted-using-keyStore",
+                )
 
-            isChainTrustedUsingLoTL or isChainTrustedUsingLoTE or isChainTrustedUsingKeyStore
+            IsChainTrusted(isChainTrustedUsingLoTL, isChainTrustedUsingLoTE, isChainTrustedUsingKeyStore)
         }
 
         registerBean<IsChainTrustedUseCase>()

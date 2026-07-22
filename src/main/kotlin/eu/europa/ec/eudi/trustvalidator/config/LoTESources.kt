@@ -15,6 +15,7 @@
  */
 package eu.europa.ec.eudi.trustvalidator.config
 
+import arrow.core.NonEmptyList
 import eu.europa.ec.eudi.etsi119602.consultation.*
 import eu.europa.ec.eudi.etsi119602.consultation.eu.ServiceDigitalIdentityCertificateType
 import eu.europa.ec.eudi.etsi119602.consultation.eu.pidSigningCertificateProfile
@@ -23,9 +24,6 @@ import eu.europa.ec.eudi.etsi119602.consultation.eu.wrpAccessCertificateProfile
 import eu.europa.ec.eudi.etsi119602.datamodel.Uri
 import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import io.ktor.client.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.cert.TrustAnchor
@@ -48,7 +46,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
     clock: Clock,
     continueOnProblem: ContinueOnProblem = ContinueOnProblem.Never,
     constraints: LoadLoTEAndPointers.Constraints,
-): ComposeChainTrust<List<X509Certificate>, VerificationContext, TrustAnchor>? =
+): ComposeChainTrust<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     loteSources()?.let { (locations, services) ->
         log.info(locations)
         val provisionTrustAnchorsFromLOTE =

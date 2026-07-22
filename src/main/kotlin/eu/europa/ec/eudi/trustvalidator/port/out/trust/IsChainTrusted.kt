@@ -13,10 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.europa.ec.eudi.trustvalidator.adapter.out.consultation
+package eu.europa.ec.eudi.trustvalidator.port.out.trust
 
-import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContextF
+import arrow.core.NonEmptyList
 
-fun <CHAIN : Any, CONTEXT : Any, TRUST_ANCHOR : Any> IsChainTrustedForContextF.Companion.empty():
-    IsChainTrustedForContextF<CHAIN, CONTEXT, TRUST_ANCHOR> =
-    IsChainTrustedForContextF { _, _ -> null }
+fun interface IsChainTrusted<in CHAIN : Any, in CONTEXT : Any, out TRUST_ANCHOR : Any> {
+    suspend operator fun invoke(
+        chain: CHAIN,
+        context: CONTEXT,
+    ): CertificateChainTrust<TRUST_ANCHOR>?
+}
+
+sealed interface CertificateChainTrust<out TRUST_ANCHOR : Any> {
+    data class Trusted<out TRUST_ANCHOR : Any>(
+        val trustAnchor: TRUST_ANCHOR,
+    ) : CertificateChainTrust<TRUST_ANCHOR>
+
+    class NotTrusted(
+        val reasons: NonEmptyList<Throwable>,
+    ) : CertificateChainTrust<Nothing>
+}
