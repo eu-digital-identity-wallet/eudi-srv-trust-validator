@@ -21,7 +21,6 @@ import eu.europa.ec.eudi.etsi119602.consultation.ContinueOnProblem
 import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTEAndPointers
 import eu.europa.ec.eudi.etsi1196x2.consultation.DisposableContainer
 import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContextF
-import eu.europa.ec.eudi.etsi1196x2.consultation.SensitiveApi
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
@@ -56,7 +55,6 @@ import java.security.cert.X509Certificate
 import java.util.concurrent.Executors
 import kotlin.time.Clock
 
-@OptIn(SensitiveApi::class)
 internal class TrustValidatorServiceContext :
     BeanRegistrarDsl({
         registerBean { Clock.System }
@@ -114,7 +112,9 @@ internal class TrustValidatorServiceContext :
 
         registerBean {
             val isChainTrustedUsingLoTL =
-                bean<IsChainTrustedForContextF<List<X509Certificate>, VerificationContext, TrustAnchor>>("is-chain-trusted-using-lotl")
+                bean<IsChainTrustedForContextF<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>>(
+                    "is-chain-trusted-using-lotl",
+                )
             val isChainTrustedUsingLoTE =
                 bean<IsChainTrustedForContextF<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>>(
                     "is-chain-trusted-using-lote",
