@@ -35,7 +35,7 @@ jobs:
           distribution: temurin
           java-version: '25'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.2.0
       - run: ./gradlew clean test koverXmlReport --refresh-dependencies
       - uses: sonarsource/sonarqube-scan-action@v8.2.1
         if: (github.event_name == 'push'|| github.event_name == 'workflow_dispatch')
