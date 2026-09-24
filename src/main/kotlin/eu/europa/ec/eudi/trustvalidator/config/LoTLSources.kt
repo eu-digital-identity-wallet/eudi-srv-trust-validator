@@ -33,14 +33,15 @@ import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
 import java.util.concurrent.ExecutorService
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration
 
 private val log = LoggerFactory.getLogger("isChainTrustedForContextUsingLoTL")
 
 fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTL(
     scope: DisposableScope,
     cacheDirectory: Path,
+    fileCacheExpiration: Duration,
+    inMemoryCacheExpiration: Duration,
     executorService: ExecutorService,
     clock: Clock,
 ): IsChainTrustedForContext<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
@@ -56,12 +57,12 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTL(
                             loader =
                                 ConcurrentCacheDataLoader(
                                     DssOptions.DefaultHttpLoader,
-                                    24.hours,
+                                    fileCacheExpiration,
                                     cacheDirectory,
                                 ),
                             executorService = executorService,
                         ),
-                    ).cached(clock = clock, ttl = 10.minutes, expectedQueries = lotlSources.size).bind()
+                    ).cached(clock = clock, expectedQueries = lotlSources.size, ttl = inMemoryCacheExpiration).bind()
                 }
 
             getTrustAnchorsFromLoTL.validator(

@@ -27,6 +27,7 @@ import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustValidatorUi
 import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.empty
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
+import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.lote.CleanupLoTECache
 import eu.europa.ec.eudi.trustvalidator.adapter.out.trust.IsChainTrusted
 import eu.europa.ec.eudi.trustvalidator.config.TrustValidatorConfigurationProperties
 import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingKeyStore
@@ -54,6 +55,7 @@ import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
 import java.util.concurrent.Executors
 import kotlin.time.Clock
+import kotlin.time.toKotlinDuration
 
 internal class TrustValidatorServiceContext :
     BeanRegistrarDsl({
@@ -67,7 +69,11 @@ internal class TrustValidatorServiceContext :
             val config = bean<TrustValidatorConfigurationProperties>()
             config.trustSources?.isChainTrustedForContextUsingLoTL(
                 bean(),
-                config.dss.cacheLocation,
+                config.dss.fileCache.location,
+                config.dss.fileCache.expiration
+                    .toKotlinDuration(),
+                config.dss.inMemoryCache.expiration
+                    .toKotlinDuration(),
                 bean("dss-executor"),
                 bean(),
             ) ?: IsChainTrustedForContextF.empty()
@@ -98,7 +104,11 @@ internal class TrustValidatorServiceContext :
             val config = bean<TrustValidatorConfigurationProperties>()
             config.trustSources?.isChainTrustedForContextUsingLoTE(
                 bean(),
-                config.lote.cacheLocation,
+                config.lote.fileCache.location,
+                config.lote.fileCache.expiration
+                    .toKotlinDuration(),
+                config.lote.inMemoryCache.expiration
+                    .toKotlinDuration(),
                 bean(),
                 bean(),
                 ContinueOnProblem.Never,
@@ -131,7 +141,20 @@ internal class TrustValidatorServiceContext :
 
         registerBean {
             val configuration = bean<TrustValidatorConfigurationProperties>()
-            CleanupDSSCache(configuration.dss.cacheLocation)
+            CleanupDSSCache(
+                configuration.dss.fileCache.location,
+                configuration.dss.fileCache.cleanupInterval
+                    .toKotlinDuration(),
+            )
+        }
+
+        registerBean {
+            val configuration = bean<TrustValidatorConfigurationProperties>()
+            CleanupLoTECache(
+                configuration.lote.fileCache.location,
+                configuration.lote.fileCache.cleanupInterval
+                    .toKotlinDuration(),
+            )
         }
 
         registerBean {

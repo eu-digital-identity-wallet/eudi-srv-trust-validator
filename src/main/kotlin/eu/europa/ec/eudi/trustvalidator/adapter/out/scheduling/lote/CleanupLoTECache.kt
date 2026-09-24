@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss
+package eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.lote
 
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.SchedulingConfigurer
@@ -24,15 +24,15 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
-private val log = LoggerFactory.getLogger(CleanupDSSCache::class.java)
+private val log = LoggerFactory.getLogger(CleanupLoTECache::class.java)
 
-class CleanupDSSCache(
+class CleanupLoTECache(
     private val location: Path,
     private val interval: Duration,
 ) : SchedulingConfigurer {
     override fun configureTasks(taskRegistrar: ScheduledTaskRegistrar) {
         taskRegistrar.addFixedRateTask(interval = interval, initialDelay = 0.seconds) {
-            log.info("Cleaning up DSS cache at $location...")
+            log.info("Cleaning up LoTE cache at $location...")
             location.toFile().deleteRecursively()
         }
     }

@@ -95,13 +95,37 @@ Default value: `3600`
 
 ### DSS Configuration
 
-Variable: `TRUST_VALIDATOR_DSS_CACHE_LOCATION`  
+Variable: `TRUST_VALIDATOR_DSS_FILE_CACHE_LOCATION`  
 Description: Path to the directory where DSS will cache LoTLs
+
+Variable: `TRUST_VALIDATOR_DSS_FILE_CACHE_CLEANUP_INTERVAL`
+Description: Interval at which the DSS cache is deleted so trust lists are refreshed on the next use; accepts Spring duration syntax
+Default value: `1435m`
+
+Variable: `TRUST_VALIDATOR_DSS_FILE_CACHE_EXPIRATION`
+Description: How long LoTL files remain valid in the DSS file cache
+Default value: `24h`
+
+Variable: `TRUST_VALIDATOR_DSS_IN_MEMORY_CACHE_EXPIRATION`  
+Description: Time that LoTL trust-anchor results are retained in the in-memory cache before they are reloaded  
+Default value: `PT10M`
 
 ### LoTE Configuration
 
-Variable: `TRUST_VALIDATOR_LOTE_CACHE_LOCATION`  
-Description: Path to the directory where downloaded LoTEs will be cached
+Variable: `TRUST_VALIDATOR_LOTE_FILE_CACHE_LOCATION`  
+Description: Path to the directory where downloaded LoTEs are cached
+
+Variable: `TRUST_VALIDATOR_LOTE_FILE_CACHE_CLEANUP_INTERVAL`  
+Description: Interval at which the LoTE file cache is deleted so LoTEs are refreshed on the next use  
+Default value: `PT23H55M`  
+
+Variable: `TRUST_VALIDATOR_LOTE_FILE_CACHE_EXPIRATION`  
+Description: Time that downloaded LoTE files remain valid in the file cache  
+Default value: `PT24H`  
+
+Variable: `TRUST_VALIDATOR_LOTE_IN_MEMORY_CACHE_EXPIRATION`  
+Description: Time that LoTE trust-anchor results are retained in the in-memory cache before they are reloaded  
+Default value: `PT10M`  
 
 > [!IMPORTANT]
 > 

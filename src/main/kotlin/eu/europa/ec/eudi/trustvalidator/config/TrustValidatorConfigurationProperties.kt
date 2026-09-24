@@ -20,6 +20,10 @@ import org.springframework.core.io.Resource
 import java.net.URI
 import java.net.URL
 import java.nio.file.Path
+import java.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.toJavaDuration
 
 @ConfigurationProperties("trust-validator")
 data class TrustValidatorConfigurationProperties(
@@ -29,12 +33,33 @@ data class TrustValidatorConfigurationProperties(
 )
 
 data class DSSConfigurationProperties(
-    val cacheLocation: Path,
+    val fileCache: FileCache,
+    val inMemoryCache: InMemoryCache,
 )
 
 data class LoteConfigurationProperties(
-    val cacheLocation: Path,
+    val fileCache: FileCache,
+    val inMemoryCache: InMemoryCache,
 )
+
+data class FileCache(
+    val location: Path,
+    val cleanupInterval: Duration = (24.hours - 5.minutes).toJavaDuration(),
+    val expiration: Duration = 24.hours.toJavaDuration(),
+) {
+    init {
+        require(cleanupInterval.isPositive)
+        require(expiration.isPositive)
+    }
+}
+
+data class InMemoryCache(
+    val expiration: Duration = 10.minutes.toJavaDuration(),
+) {
+    init {
+        require(expiration.isPositive)
+    }
+}
 
 data class TrustSourcesConfigurationProperties(
     val walletProviders: TrustedListsConfigurationProperties? = null,
