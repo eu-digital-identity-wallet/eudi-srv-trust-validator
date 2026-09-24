@@ -29,8 +29,7 @@ import org.slf4j.LoggerFactory
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration
 import java.nio.file.Path as JavaPath
 import kotlinx.io.files.Path as KotlinXPath
 
@@ -42,6 +41,8 @@ private typealias LoteServices = SupportedLists<LotEMeta<VerificationContext>>
 fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
     scope: DisposableScope,
     cacheDirectory: JavaPath,
+    fileCacheExpiration: Duration,
+    inMemoryCacheExpiration: Duration,
     httpClient: HttpClient,
     clock: Clock,
     continueOnProblem: ContinueOnProblem = ContinueOnProblem.Never,
@@ -58,7 +59,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
                         LoadSingleLoTEWithFileCache(
                             cacheDirectory = KotlinXPath(cacheDirectory.toString()),
                             downloadSingleLoTE = DownloadSingleLoTE(httpClient),
-                            fileCacheExpiration = 24.hours,
+                            fileCacheExpiration = fileCacheExpiration,
                             clock = clock,
                         ),
                     ),
@@ -67,7 +68,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
                 pkix = ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
             )
 
-        provisionTrustAnchorsFromLOTE.cached(scope, locations, ttl = 10.minutes)
+        provisionTrustAnchorsFromLOTE.cached(scope, locations, ttl = inMemoryCacheExpiration)
     }
 
 private fun TrustSourcesConfigurationProperties.loteSources(): Pair<LoteLocations, LoteServices>? {
