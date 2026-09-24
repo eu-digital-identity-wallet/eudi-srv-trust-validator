@@ -68,14 +68,16 @@ internal class TrustValidatorServiceContext :
         registerBean(name = "is-chain-trusted-using-lotl", infrastructure = true, autowirable = false) {
             val config = bean<TrustValidatorConfigurationProperties>()
             config.trustSources?.isChainTrustedForContextUsingLoTL(
-                bean(),
-                config.dss.fileCache.location,
-                config.dss.fileCache.expiration
-                    .toKotlinDuration(),
-                config.dss.inMemoryCache.expiration
-                    .toKotlinDuration(),
-                bean("dss-executor"),
-                bean(),
+                scope = bean(),
+                cacheDirectory = config.dss.fileCache.location,
+                fileCacheExpiration =
+                    config.dss.fileCache.expiration
+                        .toKotlinDuration(),
+                inMemoryCacheExpiration =
+                    config.dss.inMemoryCache.expiration
+                        .toKotlinDuration(),
+                executorService = bean("dss-executor"),
+                clock = bean(),
             ) ?: IsChainTrustedForContextF.empty()
         }
 
@@ -103,20 +105,23 @@ internal class TrustValidatorServiceContext :
         registerBean(name = "is-chain-trusted-using-lote", infrastructure = true, autowirable = false) {
             val config = bean<TrustValidatorConfigurationProperties>()
             config.trustSources?.isChainTrustedForContextUsingLoTE(
-                bean(),
-                config.lote.fileCache.location,
-                config.lote.fileCache.expiration
-                    .toKotlinDuration(),
-                config.lote.inMemoryCache.expiration
-                    .toKotlinDuration(),
-                bean(),
-                bean(),
-                ContinueOnProblem.Never,
-                LoadLoTEAndPointers.Constraints.LoadOtherPointers(
-                    otherLoTEParallelism = 2,
-                    maxDepth = 1,
-                    maxLists = 50,
-                ),
+                scope = bean(),
+                cacheDirectory = config.lote.fileCache.location,
+                fileCacheExpiration =
+                    config.lote.fileCache.expiration
+                        .toKotlinDuration(),
+                inMemoryCacheExpiration =
+                    config.lote.inMemoryCache.expiration
+                        .toKotlinDuration(),
+                httpClient = bean(),
+                clock = bean(),
+                continueOnProblem = ContinueOnProblem.Never,
+                constraints =
+                    LoadLoTEAndPointers.Constraints.LoadOtherPointers(
+                        otherLoTEParallelism = 2,
+                        maxDepth = 1,
+                        maxLists = 50,
+                    ),
             ) ?: IsChainTrustedForContextF.empty()
         }
 

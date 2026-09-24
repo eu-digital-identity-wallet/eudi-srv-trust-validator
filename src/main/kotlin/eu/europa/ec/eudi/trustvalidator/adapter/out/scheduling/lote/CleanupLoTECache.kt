@@ -15,14 +15,13 @@
  */
 package eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.lote
 
+import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.util.addFixedRateTask
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.SchedulingConfigurer
-import org.springframework.scheduling.config.IntervalTask
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
 import java.nio.file.Path
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.toJavaDuration
 
 private val log = LoggerFactory.getLogger(CleanupLoTECache::class.java)
 
@@ -36,12 +35,4 @@ class CleanupLoTECache(
             location.toFile().deleteRecursively()
         }
     }
-}
-
-private fun ScheduledTaskRegistrar.addFixedRateTask(
-    interval: Duration,
-    initialDelay: Duration,
-    task: Runnable,
-) {
-    addFixedRateTask(IntervalTask(task, interval.toJavaDuration(), initialDelay.toJavaDuration()))
 }

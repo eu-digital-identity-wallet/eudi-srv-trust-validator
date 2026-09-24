@@ -25,8 +25,8 @@ import kotlin.test.assertTrue
     classes = [TrustValidatorServiceApplication::class],
     webEnvironment = SpringBootTest.WebEnvironment.MOCK,
     properties = [
-        "trust-validator.dss.cache-location=dss-cache",
-        "trust-validator.lote.cache-location=lote-cache",
+        "trust-validator.dss.file-cache.location=dss-cache",
+        "trust-validator.lote.file-cache.location=lote-cache",
     ],
 )
 class TrustValidatorServiceApplicationTest {
