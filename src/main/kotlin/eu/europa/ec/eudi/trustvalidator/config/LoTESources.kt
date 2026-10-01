@@ -47,6 +47,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
     clock: Clock,
     continueOnProblem: ContinueOnProblem = ContinueOnProblem.Never,
     constraints: LoadLoTEAndPointers.Constraints,
+    validateCertificateChainUsingPKIX: ValidateCertificateChainUsingPKIX<List<X509Certificate>, TrustAnchor>,
 ): ComposeChainTrust<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     loteSources()?.let { (locations, services) ->
         log.info(locations)
@@ -65,7 +66,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
                     ),
                 svcTypePerCtx = services,
                 continueOnProblem = continueOnProblem,
-                pkix = ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
+                pkix = validateCertificateChainUsingPKIX,
             )
 
         provisionTrustAnchorsFromLOTE.cached(scope, locations, ttl = inMemoryCacheExpiration)
@@ -264,7 +265,7 @@ private fun Logger.info(locations: LoteLocations) {
         info(VerificationContext.QEAA, it)
         info(VerificationContext.QEAAStatus, it)
     }
-    if (!locations.eaaProviders.isEmpty()) {
+    if (locations.eaaProviders.isNotEmpty()) {
         locations.eaaProviders.forEach { (useCase, location) ->
             info(VerificationContext.EAA(useCase), location)
             info(VerificationContext.EAAStatus(useCase), location)

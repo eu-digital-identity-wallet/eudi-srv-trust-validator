@@ -93,6 +93,12 @@ Variable: `CORS_MAXAGE`
 Description: Time in seconds of how long pre-flight request responses can be cached by clients  
 Default value: `3600`
 
+### Certificate Revocation Checking
+
+Variable: `TRUST_VALIDATOR_ENABLE_CERTIFICATE_REVOCATION_CHECK`  
+Description: Enables certificate revocation checking.  
+Default value: `true`
+
 ### DSS Configuration
 
 Variable: `TRUST_VALIDATOR_DSS_FILE_CACHE_LOCATION`  
