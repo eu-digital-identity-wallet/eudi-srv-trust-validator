@@ -23,13 +23,13 @@ import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
 import java.util.*
 
-fun ValidateCertificateChainUsingPKIX(isRevocationEnable: Boolean): ValidateCertificateChainUsingPKIX<List<X509Certificate>, TrustAnchor> {
-    if (!isRevocationEnable)
+fun ValidateCertificateChainUsingPKIX(isRevocationEnabled: Boolean): ValidateCertificateChainUsingPKIX<List<X509Certificate>, TrustAnchor> {
+    if (!isRevocationEnabled)
         return ValidateCertificateChainUsingPKIXJvm {
             this.isRevocationEnabled = false
         }
     return ValidateCertificateChainUsingPKIXJvm {
-        isRevocationEnabled = true
+        this.isRevocationEnabled = true
         addCertPathChecker(
             checkNotNull(
                 JvmSecurity.DefaultPKIXValidator.revocationChecker as? PKIXRevocationChecker,
