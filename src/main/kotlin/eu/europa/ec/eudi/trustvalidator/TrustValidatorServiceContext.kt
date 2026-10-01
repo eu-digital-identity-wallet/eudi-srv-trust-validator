@@ -81,14 +81,7 @@ internal class TrustValidatorServiceContext :
                         .toKotlinDuration(),
                 executorService = bean("dss-executor"),
                 clock = bean(),
-                revocationChecker = {
-                    checkNotNull(JvmSecurity.DefaultPKIXValidator.revocationChecker as? PKIXRevocationChecker).apply {
-                        options =
-                            EnumSet.of(
-                                PKIXRevocationChecker.Option.PREFER_CRLS,
-                            )
-                    }
-                },
+                revocationChecker = ::preferCrlsRevocationChecker,
             ) ?: IsChainTrustedForContextF.empty()
         }
 
@@ -96,14 +89,7 @@ internal class TrustValidatorServiceContext :
             val config = bean<TrustValidatorConfigurationProperties>()
             runBlocking {
                 config.trustSources?.isChainTrustedForContextUsingKeyStore(
-                    revocationChecker = {
-                        checkNotNull(JvmSecurity.DefaultPKIXValidator.revocationChecker as? PKIXRevocationChecker).apply {
-                            options =
-                                EnumSet.of(
-                                    PKIXRevocationChecker.Option.PREFER_CRLS,
-                                )
-                        }
-                    },
+                    revocationChecker = ::preferCrlsRevocationChecker,
                 )
             } ?: IsChainTrustedForContextF.empty()
         }
@@ -142,14 +128,7 @@ internal class TrustValidatorServiceContext :
                         maxDepth = 1,
                         maxLists = 50,
                     ),
-                revocationChecker = {
-                    checkNotNull(JvmSecurity.DefaultPKIXValidator.revocationChecker as? PKIXRevocationChecker).apply {
-                        options =
-                            EnumSet.of(
-                                PKIXRevocationChecker.Option.PREFER_CRLS,
-                            )
-                    }
-                },
+                revocationChecker = ::preferCrlsRevocationChecker,
             ) ?: IsChainTrustedForContextF.empty()
         }
 
@@ -273,3 +252,10 @@ private class SpringDisposableContainer :
         dispose()
     }
 }
+
+private fun preferCrlsRevocationChecker(): PKIXRevocationChecker =
+    checkNotNull(
+        JvmSecurity.DefaultPKIXValidator.revocationChecker as? PKIXRevocationChecker,
+    ).apply {
+        options = EnumSet.of(PKIXRevocationChecker.Option.PREFER_CRLS)
+    }
