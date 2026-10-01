@@ -29,7 +29,7 @@ import java.security.cert.X509Certificate
 private val log = LoggerFactory.getLogger("isChainTrustedForContextUsingKeyStore")
 
 suspend fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingKeyStore(
-    validationCertificateChainChecker: ValidateCertificateChainUsingPKIXJvm,
+    validateCertificateChainUsingPKIX: ValidateCertificateChainUsingPKIX<List<X509Certificate>, TrustAnchor>,
 ): IsChainTrustedForContext<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     keyStore?.let {
         val supportedVerificationContexts = configuredVerificationContexts()
@@ -39,8 +39,7 @@ suspend fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingKey
             keystore = loadKeyStore(it),
             supportedVerificationContexts = supportedVerificationContexts,
             validateCertificateChain =
-                ValidateCertificateChainUsingDirectTrustJvm or
-                    validationCertificateChainChecker,
+                ValidateCertificateChainUsingDirectTrustJvm or validateCertificateChainUsingPKIX,
             regexPerVerificationContext = { "^.*$".toRegex() },
         )
     }

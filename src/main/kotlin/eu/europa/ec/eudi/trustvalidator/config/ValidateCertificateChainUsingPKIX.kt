@@ -16,26 +16,26 @@
 package eu.europa.ec.eudi.trustvalidator.config
 
 import eu.europa.ec.eudi.etsi1196x2.consultation.JvmSecurity
+import eu.europa.ec.eudi.etsi1196x2.consultation.ValidateCertificateChainUsingPKIX
 import eu.europa.ec.eudi.etsi1196x2.consultation.ValidateCertificateChainUsingPKIXJvm
 import java.security.cert.PKIXRevocationChecker
+import java.security.cert.TrustAnchor
+import java.security.cert.X509Certificate
 import java.util.*
 
-fun validateCertificateChainUsingPKIX(isRevocationEnable: Boolean): ValidateCertificateChainUsingPKIXJvm {
+fun ValidateCertificateChainUsingPKIX(isRevocationEnable: Boolean): ValidateCertificateChainUsingPKIX<List<X509Certificate>, TrustAnchor> {
     if (!isRevocationEnable)
         return ValidateCertificateChainUsingPKIXJvm {
             this.isRevocationEnabled = false
         }
     return ValidateCertificateChainUsingPKIXJvm {
-        this.isRevocationEnabled = true
-        ValidateCertificateChainUsingPKIXJvm {
-            isRevocationEnabled = true
-            addCertPathChecker(
-                checkNotNull(
-                    JvmSecurity.DefaultPKIXValidator.revocationChecker as? PKIXRevocationChecker,
-                ).apply {
-                    options = EnumSet.of(PKIXRevocationChecker.Option.PREFER_CRLS)
-                },
-            )
-        }
+        isRevocationEnabled = true
+        addCertPathChecker(
+            checkNotNull(
+                JvmSecurity.DefaultPKIXValidator.revocationChecker as? PKIXRevocationChecker,
+            ).apply {
+                options = EnumSet.of(PKIXRevocationChecker.Option.PREFER_CRLS)
+            },
+        )
     }
 }

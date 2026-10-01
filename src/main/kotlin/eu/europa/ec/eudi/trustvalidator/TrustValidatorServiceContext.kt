@@ -29,11 +29,7 @@ import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.empty
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.lote.CleanupLoTECache
 import eu.europa.ec.eudi.trustvalidator.adapter.out.trust.IsChainTrusted
-import eu.europa.ec.eudi.trustvalidator.config.TrustValidatorConfigurationProperties
-import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingKeyStore
-import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingLoTE
-import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingLoTL
-import eu.europa.ec.eudi.trustvalidator.config.validateCertificateChainUsingPKIX
+import eu.europa.ec.eudi.trustvalidator.config.*
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -79,7 +75,7 @@ internal class TrustValidatorServiceContext :
                         .toKotlinDuration(),
                 executorService = bean("dss-executor"),
                 clock = bean(),
-                validationCertificateChainChecker = validateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
+                validateCertificateChainUsingPKIX = ValidateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
             ) ?: IsChainTrustedForContextF.empty()
         }
 
@@ -87,7 +83,7 @@ internal class TrustValidatorServiceContext :
             val config = bean<TrustValidatorConfigurationProperties>()
             runBlocking {
                 config.trustSources?.isChainTrustedForContextUsingKeyStore(
-                    validationCertificateChainChecker = validateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
+                    validateCertificateChainUsingPKIX = ValidateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
                 )
             } ?: IsChainTrustedForContextF.empty()
         }
@@ -126,7 +122,7 @@ internal class TrustValidatorServiceContext :
                         maxDepth = 1,
                         maxLists = 50,
                     ),
-                validationCertificateChainChecker = validateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
+                validateCertificateChainUsingPKIX = ValidateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
             ) ?: IsChainTrustedForContextF.empty()
         }
 
