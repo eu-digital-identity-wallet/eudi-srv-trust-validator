@@ -23,13 +23,16 @@ import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.KeyStore
+import java.security.cert.PKIXRevocationChecker
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
+import java.util.EnumSet
 
 private val log = LoggerFactory.getLogger("isChainTrustedForContextUsingKeyStore")
 
-suspend fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingKeyStore():
-    IsChainTrustedForContext<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
+suspend fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingKeyStore(
+    revocationChecker: () -> PKIXRevocationChecker,
+): IsChainTrustedForContext<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     keyStore?.let {
         val supportedVerificationContexts = configuredVerificationContexts()
         log.info(supportedVerificationContexts)
@@ -40,7 +43,8 @@ suspend fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingKey
             validateCertificateChain =
                 ValidateCertificateChainUsingDirectTrustJvm or
                     ValidateCertificateChainUsingPKIXJvm {
-                        isRevocationEnabled = false
+                        isRevocationEnabled = true
+                        addCertPathChecker(revocationChecker())
                     },
             regexPerVerificationContext = { "^.*$".toRegex() },
         )

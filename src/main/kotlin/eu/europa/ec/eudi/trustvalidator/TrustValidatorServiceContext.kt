@@ -21,6 +21,7 @@ import eu.europa.ec.eudi.etsi119602.consultation.ContinueOnProblem
 import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTEAndPointers
 import eu.europa.ec.eudi.etsi1196x2.consultation.DisposableContainer
 import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContextF
+import eu.europa.ec.eudi.etsi1196x2.consultation.JvmSecurity
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
@@ -51,8 +52,10 @@ import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.config.web.server.invoke
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.reactive.CorsConfigurationSource
+import java.security.cert.PKIXRevocationChecker
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
+import java.util.EnumSet
 import java.util.concurrent.Executors
 import kotlin.time.Clock
 import kotlin.time.toKotlinDuration
@@ -78,13 +81,30 @@ internal class TrustValidatorServiceContext :
                         .toKotlinDuration(),
                 executorService = bean("dss-executor"),
                 clock = bean(),
+                revocationChecker = {
+                    checkNotNull(JvmSecurity.DefaultPKIXValidator.revocationChecker as? PKIXRevocationChecker).apply {
+                        options =
+                            EnumSet.of(
+                                PKIXRevocationChecker.Option.PREFER_CRLS,
+                            )
+                    }
+                },
             ) ?: IsChainTrustedForContextF.empty()
         }
 
         registerBean(name = "is-chain-trusted-using-keyStore", infrastructure = true, autowirable = false) {
             val config = bean<TrustValidatorConfigurationProperties>()
             runBlocking {
-                config.trustSources?.isChainTrustedForContextUsingKeyStore()
+                config.trustSources?.isChainTrustedForContextUsingKeyStore(
+                    revocationChecker = {
+                        checkNotNull(JvmSecurity.DefaultPKIXValidator.revocationChecker as? PKIXRevocationChecker).apply {
+                            options =
+                                EnumSet.of(
+                                    PKIXRevocationChecker.Option.PREFER_CRLS,
+                                )
+                        }
+                    },
+                )
             } ?: IsChainTrustedForContextF.empty()
         }
 
@@ -122,6 +142,14 @@ internal class TrustValidatorServiceContext :
                         maxDepth = 1,
                         maxLists = 50,
                     ),
+                revocationChecker = {
+                    checkNotNull(JvmSecurity.DefaultPKIXValidator.revocationChecker as? PKIXRevocationChecker).apply {
+                        options =
+                            EnumSet.of(
+                                PKIXRevocationChecker.Option.PREFER_CRLS,
+                            )
+                    }
+                },
             ) ?: IsChainTrustedForContextF.empty()
         }
 

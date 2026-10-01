@@ -29,8 +29,10 @@ import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.URL
 import java.nio.file.Path
+import java.security.cert.PKIXRevocationChecker
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
+import java.util.EnumSet
 import java.util.concurrent.ExecutorService
 import kotlin.time.Clock
 import kotlin.time.Duration
@@ -44,6 +46,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTL(
     inMemoryCacheExpiration: Duration,
     executorService: ExecutorService,
     clock: Clock,
+    revocationChecker: () -> PKIXRevocationChecker,
 ): IsChainTrustedForContext<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     lotlSources()
         .takeIf { it.isNotEmpty() }
@@ -67,7 +70,11 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTL(
 
             getTrustAnchorsFromLoTL.validator(
                 lotlSources,
-                ValidateCertificateChainUsingDirectTrustJvm or ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
+                ValidateCertificateChainUsingDirectTrustJvm or
+                    ValidateCertificateChainUsingPKIXJvm {
+                        isRevocationEnabled = true
+                        addCertPathChecker(revocationChecker())
+                    },
             )
         }
 

@@ -26,8 +26,10 @@ import eu.europa.ec.eudi.etsi1196x2.consultation.*
 import io.ktor.client.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.security.cert.PKIXRevocationChecker
 import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
+import java.util.EnumSet
 import kotlin.time.Clock
 import kotlin.time.Duration
 import java.nio.file.Path as JavaPath
@@ -47,6 +49,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
     clock: Clock,
     continueOnProblem: ContinueOnProblem = ContinueOnProblem.Never,
     constraints: LoadLoTEAndPointers.Constraints,
+    revocationChecker: () -> PKIXRevocationChecker,
 ): ComposeChainTrust<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     loteSources()?.let { (locations, services) ->
         log.info(locations)
@@ -65,7 +68,11 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
                     ),
                 svcTypePerCtx = services,
                 continueOnProblem = continueOnProblem,
-                pkix = ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
+                pkix =
+                    ValidateCertificateChainUsingPKIXJvm {
+                        isRevocationEnabled = true
+                        addCertPathChecker(revocationChecker())
+                    },
             )
 
         provisionTrustAnchorsFromLOTE.cached(scope, locations, ttl = inMemoryCacheExpiration)
