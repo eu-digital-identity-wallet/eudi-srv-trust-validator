@@ -44,6 +44,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTL(
     inMemoryCacheExpiration: Duration,
     executorService: ExecutorService,
     clock: Clock,
+    validateCertificateChainUsingPKIX: ValidateCertificateChainUsingPKIX<List<X509Certificate>, TrustAnchor>,
 ): IsChainTrustedForContext<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     lotlSources()
         .takeIf { it.isNotEmpty() }
@@ -67,7 +68,7 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTL(
 
             getTrustAnchorsFromLoTL.validator(
                 lotlSources,
-                ValidateCertificateChainUsingDirectTrustJvm or ValidateCertificateChainUsingPKIXJvm { isRevocationEnabled = false },
+                ValidateCertificateChainUsingDirectTrustJvm or validateCertificateChainUsingPKIX,
             )
         }
 

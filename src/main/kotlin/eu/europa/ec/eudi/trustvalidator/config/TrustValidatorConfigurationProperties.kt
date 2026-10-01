@@ -30,6 +30,7 @@ data class TrustValidatorConfigurationProperties(
     val dss: DSSConfigurationProperties,
     val lote: LoteConfigurationProperties,
     val trustSources: TrustSourcesConfigurationProperties? = null,
+    val enableCertificateRevocationCheck: Boolean = true,
 )
 
 data class DSSConfigurationProperties(

@@ -29,10 +29,7 @@ import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.empty
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.lote.CleanupLoTECache
 import eu.europa.ec.eudi.trustvalidator.adapter.out.trust.IsChainTrusted
-import eu.europa.ec.eudi.trustvalidator.config.TrustValidatorConfigurationProperties
-import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingKeyStore
-import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingLoTE
-import eu.europa.ec.eudi.trustvalidator.config.isChainTrustedForContextUsingLoTL
+import eu.europa.ec.eudi.trustvalidator.config.*
 import eu.europa.ec.eudi.trustvalidator.port.input.trust.IsChainTrustedUseCase
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -78,13 +75,16 @@ internal class TrustValidatorServiceContext :
                         .toKotlinDuration(),
                 executorService = bean("dss-executor"),
                 clock = bean(),
+                validateCertificateChainUsingPKIX = ValidateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
             ) ?: IsChainTrustedForContextF.empty()
         }
 
         registerBean(name = "is-chain-trusted-using-keyStore", infrastructure = true, autowirable = false) {
             val config = bean<TrustValidatorConfigurationProperties>()
             runBlocking {
-                config.trustSources?.isChainTrustedForContextUsingKeyStore()
+                config.trustSources?.isChainTrustedForContextUsingKeyStore(
+                    validateCertificateChainUsingPKIX = ValidateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
+                )
             } ?: IsChainTrustedForContextF.empty()
         }
 
@@ -122,6 +122,7 @@ internal class TrustValidatorServiceContext :
                         maxDepth = 1,
                         maxLists = 50,
                     ),
+                validateCertificateChainUsingPKIX = ValidateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
             ) ?: IsChainTrustedForContextF.empty()
         }
 
