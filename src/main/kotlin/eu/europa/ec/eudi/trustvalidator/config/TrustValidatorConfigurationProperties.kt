@@ -27,23 +27,23 @@ import kotlin.time.toJavaDuration
 
 @ConfigurationProperties("trust-validator")
 data class TrustValidatorConfigurationProperties(
-    val dss: DSSConfigurationProperties,
-    val lote: LoteConfigurationProperties,
+    val dss: LoTLConfigurationProperties,
+    val lote: LoTEConfigurationProperties,
     val trustSources: TrustSourcesConfigurationProperties? = null,
     val enableCertificateRevocationCheck: Boolean = true,
-)
+) {
+    data class LoTLConfigurationProperties(
+        val fileCache: FileCacheConfigurationProperties,
+        val inMemoryCache: InMemoryCacheConfigurationProperties,
+    )
 
-data class DSSConfigurationProperties(
-    val fileCache: FileCache,
-    val inMemoryCache: InMemoryCache,
-)
+    data class LoTEConfigurationProperties(
+        val fileCache: FileCacheConfigurationProperties,
+        val inMemoryCache: InMemoryCacheConfigurationProperties,
+    )
+}
 
-data class LoteConfigurationProperties(
-    val fileCache: FileCache,
-    val inMemoryCache: InMemoryCache,
-)
-
-data class FileCache(
+data class FileCacheConfigurationProperties(
     val location: Path,
     val cleanupInterval: Duration = (24.hours - 5.minutes).toJavaDuration(),
     val expiration: Duration = 24.hours.toJavaDuration(),
@@ -54,7 +54,7 @@ data class FileCache(
     }
 }
 
-data class InMemoryCache(
+data class InMemoryCacheConfigurationProperties(
     val expiration: Duration = 10.minutes.toJavaDuration(),
 ) {
     init {
@@ -67,7 +67,7 @@ data class TrustSourcesConfigurationProperties(
     val pidProviders: TrustedListsConfigurationProperties? = null,
     val qeaaProviders: TrustedListsConfigurationProperties? = null,
     val pubEaaProviders: TrustedListsConfigurationProperties? = null,
-    val eaaProviders: List<EAALoTLConfigurationProperties>? = null,
+    val eaaProviders: List<EAATrustedListsConfigurationProperties>? = null,
     val wrpacProviders: TrustedListsConfigurationProperties? = null,
     val wrprcProviders: TrustedListsConfigurationProperties? = null,
     val keyStore: KeyStoreConfigurationProperties? = null,
@@ -76,20 +76,20 @@ data class TrustSourcesConfigurationProperties(
 data class TrustedListsConfigurationProperties(
     val lotl: LoTLConfigurationProperties? = null,
     val lote: LoTEConfigurationProperties? = null,
-)
+) {
+    data class LoTLConfigurationProperties(
+        val location: URL,
+        val signatureVerification: KeyStoreConfigurationProperties? = null,
+        val issuanceService: URI,
+        val revocationService: URI,
+    )
 
-data class LoTLConfigurationProperties(
-    val location: URL,
-    val signatureVerification: KeyStoreConfigurationProperties? = null,
-    val issuanceService: URI,
-    val revocationService: URI,
-)
-
-data class LoTEConfigurationProperties(
-    val location: URL,
-    val issuanceService: URI,
-    val revocationService: URI,
-)
+    data class LoTEConfigurationProperties(
+        val location: URL,
+        val issuanceService: URI,
+        val revocationService: URI,
+    )
+}
 
 data class KeyStoreConfigurationProperties(
     val location: Resource,
@@ -110,8 +110,8 @@ value class Password(
     override fun toString(): String = "Password(REDACTED)"
 }
 
-data class EAALoTLConfigurationProperties(
+data class EAATrustedListsConfigurationProperties(
     val useCase: String,
-    val lotl: LoTLConfigurationProperties? = null,
-    val lote: LoTEConfigurationProperties? = null,
+    val lotl: TrustedListsConfigurationProperties.LoTLConfigurationProperties? = null,
+    val lote: TrustedListsConfigurationProperties.LoTEConfigurationProperties? = null,
 )
