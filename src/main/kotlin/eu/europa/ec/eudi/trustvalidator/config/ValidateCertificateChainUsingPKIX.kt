@@ -15,7 +15,6 @@
  */
 package eu.europa.ec.eudi.trustvalidator.config
 
-import eu.europa.ec.eudi.etsi1196x2.consultation.JvmSecurity
 import eu.europa.ec.eudi.etsi1196x2.consultation.ValidateCertificateChainUsingPKIX
 import eu.europa.ec.eudi.etsi1196x2.consultation.ValidateCertificateChainUsingPKIXJvm
 import java.security.cert.PKIXRevocationChecker
@@ -28,14 +27,7 @@ fun ValidateCertificateChainUsingPKIX(isRevocationEnabled: Boolean): ValidateCer
         return ValidateCertificateChainUsingPKIXJvm {
             this.isRevocationEnabled = false
         }
-    return ValidateCertificateChainUsingPKIXJvm {
-        this.isRevocationEnabled = true
-        addCertPathChecker(
-            checkNotNull(
-                JvmSecurity.DefaultPKIXValidator.revocationChecker as? PKIXRevocationChecker,
-            ).apply {
-                options = EnumSet.of(PKIXRevocationChecker.Option.PREFER_CRLS)
-            },
-        )
+    return ValidateCertificateChainUsingPKIXJvm.withRevocationChecker {
+        options = EnumSet.of(PKIXRevocationChecker.Option.PREFER_CRLS)
     }
 }
