@@ -48,7 +48,7 @@ private fun TrustSourcesConfigurationProperties.configuredVerificationContexts()
     buildSet {
         fun TrustedListsConfigurationProperties?.isConfigured(): Boolean = null != this && (null != lotl || null != lote)
 
-        fun EAALoTLConfigurationProperties.isConfigured(): Boolean = null != lotl || null != lote
+        fun EAATrustedListsConfigurationProperties.isConfigured(): Boolean = null != lotl || null != lote
 
         if (walletProviders.isConfigured()) {
             add(VerificationContext.WalletProviderAttestation)

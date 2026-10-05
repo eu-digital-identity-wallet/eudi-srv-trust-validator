@@ -123,9 +123,10 @@ private fun TrustSourcesConfigurationProperties.lotlSources(): Map<VerificationC
         }
     }
 
-private fun LoTLConfigurationProperties.issuanceLoTLSource(): LOTLSource = lotlSourceOf(location, signatureVerification, issuanceService)
+private fun TrustedListsConfigurationProperties.LoTLConfigurationProperties.issuanceLoTLSource(): LOTLSource =
+    lotlSourceOf(location, signatureVerification, issuanceService)
 
-private fun LoTLConfigurationProperties.revocationLoTLSource(): LOTLSource =
+private fun TrustedListsConfigurationProperties.LoTLConfigurationProperties.revocationLoTLSource(): LOTLSource =
     lotlSourceOf(location, signatureVerification, revocationService)
 
 private fun lotlSourceOf(
