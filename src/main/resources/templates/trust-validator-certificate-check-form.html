@@ -12,164 +12,171 @@
     <title th:text="#{trust.validator.title}">Trust Validator</title>
 </head>
 <body>
-<main>
-    <div class="container p-4">
-        <div class="row gy-2 mb-4">
-            <div class="col d-flex justify-content-start align-items-center">
-                <img class="eudiw-logo"
-                     src="../public/img/eudiw-logo.svg"
-                     th:src="@{/public/img/eudiw-logo.svg}"
-                     alt="EU Digital Identity Wallet"
-                     th:alt-title="#{trust.validator.logo.alt}"
-                />
-            </div>
-            <div class="col d-flex justify-content-center align-items-center">
-                <h1 th:text="#{trust.validator.title}">Trust Validator</h1>
-            </div>
-        </div>
-        <div class="row mb-3">
-            <div class="col">
-                <h5 th:text="#{trust.validator.subtitle}">Validate an X.509 certificate chain against a verification
-                    context.</h5>
-                <h5 th:text="#{trust.validator.hint}">Provide one X.509 certificate per line as Base64-encoded DER (no
-                    PEM
-                    headers/footers).</h5>
-            </div>
-        </div>
+<header class="tv-header">
+    <div class="tv-header-inner">
+        <img class="eudiw-logo tv-logo"
+             src="../public/img/eudiw-logo.svg"
+             th:src="@{/public/img/eudiw-logo.svg}"
+             alt="EU Digital Identity Wallet"
+             th:alt="#{trust.validator.logo.alt}"
+        />
+        <h1 class="tv-title" th:text="#{trust.validator.title}">Trust Validator</h1>
+        <span class="tv-status-chip"
+              th:if="${success != null}"
+              th:classappend="${success} ? 'is-success' : 'is-danger'"
+              th:text="${success} ? #{trust.validator.result.success} : #{trust.validator.result.error}">
+            Status
+        </span>
+    </div>
+</header>
+<main class="tv-main">
+    <p class="tv-subtitle" th:text="#{trust.validator.subtitle}">Validate an X.509 certificate chain against a
+        verification context.</p>
+    <p class="tv-hint" th:text="#{trust.validator.hint}">Provide one X.509 certificate per line as Base64-encoded
+        DER (no PEM headers/footers).</p>
 
-        <div class="row mb-2 p-3 bg-secondary-subtle rounded">
-            <div class="col">
-                <form id="x509-certificate-chain-validation-form"
-                      method="post"
-                      enctype="application/x-www-form-urlencoded"
-                      th:action="@{/validate}">
+    <div class="tv-grid">
+        <section class="tv-card">
+            <h2 class="tv-card-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true"><path
+                        d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+                <span th:text="#{trust.validator.form.title}">Validate certificate chain</span>
+            </h2>
 
-                    <div class="mb-3">
-                        <label for="chain" class="form-label"
-                               th:text="#{trust.validator.form.certificate.label}">
-                            Certificate or Certificate chain (line-separated Base64(DER))
-                        </label>
-                        <textarea class="form-control"
-                                  id="chain"
-                                  name="chain"
-                                  rows="10"
-                                  th:placeholder="#{trust.validator.form.certificates.placeholder}"
-                                  th:text="${chain}"></textarea>
-                    </div>
+            <form id="x509-certificate-chain-validation-form"
+                  method="post"
+                  enctype="application/x-www-form-urlencoded"
+                  th:action="@{/validate}">
 
-                    <div class="mb-3">
-                        <label for="verificationContext" class="form-label"
-                               th:text="#{trust.validator.form.context.label}">
-                            Verification context
-                        </label>
-                        <select class="form-select"
-                                id="verificationContext"
-                                name="verificationContext"
-                                required>
-                            <option value=""
-                                    th:selected="${#strings.isEmpty(selectedContext)}"
-                                    th:text="#{trust.validator.form.context.select}"
-                                    disabled>
-                                Select a context
-                            </option>
-                            <option th:each="verificationContext : ${verificationContexts}"
+                <div class="tv-field">
+                    <label for="chain" class="form-label"
+                           th:text="#{trust.validator.form.certificate.label}">
+                        Certificate or Certificate chain (line-separated Base64(DER))
+                    </label>
+                    <textarea class="form-control tv-codearea"
+                              id="chain"
+                              name="chain"
+                              rows="10"
+                              th:placeholder="#{trust.validator.form.certificates.placeholder}"
+                              th:text="${chain}"></textarea>
+                </div>
+
+                <div class="tv-field">
+                    <label for="verificationContext" class="form-label"
+                           th:text="#{trust.validator.form.context.label}">
+                        Verification context
+                    </label>
+                    <select class="form-select tv-select"
+                            id="verificationContext"
+                            name="verificationContext"
+                            required>
+                        <option value=""
+                                th:selected="${#strings.isEmpty(selectedContext)}"
+                                th:text="#{trust.validator.form.context.select}"
+                                disabled>
+                            Select a context
+                        </option>
+                        <optgroup th:each="group : ${contextGroups}" th:attr="label=${group.first}">
+                            <option th:each="verificationContext : ${group.second}"
                                     th:value="${verificationContext}"
                                     th:text="${verificationContext}"
                                     th:selected="${verificationContext == selectedContext}">
                                 CONTEXT
                             </option>
-                        </select>
-                    </div>
+                        </optgroup>
+                    </select>
+                </div>
 
-                    <div class="mb-3" id="useCaseContainer" style="display:none;">
-                        <label for="useCase" class="form-label"
-                               th:text="#{trust.validator.form.usecase.label}">
-                            Verification use-case
-                        </label>
-                        <input class="form-control"
-                               type="text"
-                               id="useCase"
-                               name="useCase"
-                               th:placeholder="#{trust.validator.form.usecase.placeholder}"
-                               th:value="${useCase}"
-                        >
-                        <div class="form-text" th:text="#{trust.validator.form.usecase.help}">
-                            Applicable to contexts EAA, EAAStatus and Custom.
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary" id="validateButton">
-                            <span id="buttonText" th:text="#{trust.validator.action.validate}">Validate</span>
-                            <span id="buttonSpinner" class="spinner-border spinner-border-sm" role="status"
-                                  aria-hidden="true" style="display:none;"></span>
-                            <span id="loadingText" class="sr-only" style="display:none;"
-                                  th:text="#{trust.validator.action.loading}">Loading...</span>
-                        </button>
-                    </div>
-                </form>
-
-                <div class="mt-4" th:if="${success != null}">
-                    <div class="alert"
-                         th:classappend="${success} ? ' alert-success' : ' alert-danger'"
-                         role="alert">
-                        <strong th:text="${success} ? #{trust.validator.result.success} : #{trust.validator.result.error}">
-                            Status
-                        </strong>
-                        <span th:text="${messageKey != null} ? ${#messages.msg(messageKey, messageArgs)} : ${message}">
-                            Message
-                        </span>
-                        <span th:if="${!success and !#strings.isEmpty(errorDetails)}" th:text="' - ' + ${errorDetails}">
-                            Certification path could not be validated
-                        </span>
-                    </div>
-
-                    <div class="card" th:if="${success}">
-                        <div class="card-body">
-                            <h5 class="card-title mb-3" th:text="#{trust.validator.result.anchor.title}">
-                                Trust anchor used
-                            </h5>
-                            <div>
-                                <div class="fw-semibold" th:text="#{trust.validator.result.anchor.issuer.subject}">Trust
-                                    Anchor Subject
-                                </div>
-                                <div class="font-monospace small" th:text="${trustAnchorSubject}">subject</div>
-                            </div>
-                            <div class="mb-2">
-                                <div class="fw-semibold" th:text="#{trust.validator.result.anchor.certificate}">Trust
-                                    Anchor Certificate
-                                </div>
-                                <div class="font-monospace small" th:text="${trustAnchorCertificate}">certificate</div>
-                            </div>
-                            <div class="mt-3" th:if="${#strings.isEmpty(trustAnchorCertificate)}">
-                                <div class="text-muted small" th:text="#{trust.validator.result.anchor.unavailable}">
-                                    Trust anchor details are not available.
-                                </div>
-                            </div>
-                        </div>
+                <div class="tv-field tv-usecase" id="useCaseContainer">
+                    <label for="useCase" class="form-label"
+                           th:text="#{trust.validator.form.usecase.label}">
+                        Verification use-case
+                    </label>
+                    <input class="form-control"
+                           type="text"
+                           id="useCase"
+                           name="useCase"
+                           th:placeholder="#{trust.validator.form.usecase.placeholder}"
+                           th:value="${useCase}"
+                    >
+                    <div class="form-text" th:text="#{trust.validator.form.usecase.help}">
+                        Applicable to contexts EAA, EAAStatus and Custom.
                     </div>
                 </div>
 
-            </div>
-        </div>
+                <div class="tv-actions">
+                    <button type="button" class="btn tv-btn-secondary" id="resetFormButton"
+                            th:text="#{trust.validator.action.reset}">
+                        Reset
+                    </button>
+                    <button type="submit" class="btn tv-btn-primary" id="validateButton">
+                        <span id="buttonText" th:text="#{trust.validator.action.validate}">Validate</span>
+                        <span id="buttonSpinner" class="spinner-border spinner-border-sm" role="status"
+                              aria-hidden="true" style="display:none;"></span>
+                        <span id="loadingText" class="sr-only" style="display:none;"
+                              th:text="#{trust.validator.action.loading}">Loading...</span>
+                    </button>
+                </div>
+            </form>
+        </section>
 
-        <div class="row mt-4">
-            <div class="col d-flex justify-content-end">
-                <button class="btn btn-outline-danger"
-                        id="resetFormButton"
-                        onclick="window.location.href=window.location.href"
-                        th:text="#{trust.validator.action.reset}"
-                >
-                    Reset
-                </button>
-            </div>
-        </div>
+        <section th:if="${success != null}">
 
+            <div class="tv-result-panel is-success" th:if="${success}">
+                <div class="tv-result-head">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                         aria-hidden="true"><path
+                        d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path
+                        d="m9 12 2 2 4-4"/></svg>
+                    <span th:text="${messageKey != null} ? ${#messages.msg(messageKey, messageArgs)} : ${message}">
+                        X.509 Certificate Chain is trusted
+                    </span>
+                </div>
+                <div class="tv-result-body">
+                    <div class="tv-anchor">
+                        <div class="tv-anchor-label" th:text="#{trust.validator.result.anchor.issuer.subject}">
+                            Trust Anchor Subject
+                        </div>
+                        <div class="tv-anchor-value" th:text="${trustAnchorSubject}">subject</div>
+                    </div>
+                    <div class="tv-anchor" th:if="${!#strings.isEmpty(trustAnchorCertificate)}">
+                        <div class="tv-anchor-label" th:text="#{trust.validator.result.anchor.certificate}">Trust Anchor
+                            Certificate</div>
+                        <pre class="tv-code"><code style="word-break: break-all"
+                                                    th:text="${trustAnchorCertificate}">certificate</code></pre>
+                    </div>
+                    <div class="tv-muted" th:if="${#strings.isEmpty(trustAnchorCertificate)}"
+                         th:text="#{trust.validator.result.anchor.unavailable}">
+                        Trust anchor details are not available.
+                    </div>
+                </div>
+            </div>
+
+            <div class="tv-result-panel is-danger" th:if="${!success}">
+                <div class="tv-result-head">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                         aria-hidden="true"><path
+                        d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path
+                        d="m14.5 9.5-5 5"/><path d="m9.5 9.5 5 5"/></svg>
+                    <span th:text="${messageKey != null} ? ${#messages.msg(messageKey, messageArgs)} : ${message}">
+                        X.509 Certificate Chain is not trusted
+                    </span>
+                </div>
+                <div class="tv-result-body" th:if="${!#strings.isEmpty(errorDetails)}">
+                    <span class="tv-error-details" th:text="${errorDetails}">
+                        Certification path could not be validated
+                    </span>
+                </div>
+            </div>
+        </section>
     </div>
 </main>
 <script type="application/javascript">
     (function () {
-        //Form loading button change
         const form = document.getElementById("x509-certificate-chain-validation-form");
         const validateButton = document.getElementById("validateButton");
         const buttonText = document.getElementById("buttonText");
@@ -177,23 +184,16 @@
         const loadingText = document.getElementById("loadingText");
         const resetFormButton = document.getElementById("resetFormButton");
 
-        //UseCase visibility control
         const verificationContext = document.getElementById("verificationContext");
         const useCaseContainer = document.getElementById("useCaseContainer");
         const useCaseInput = document.getElementById("useCase");
 
         function toggleUseCase() {
-            switch (verificationContext.value) {
-                case "EAA":
-                case "EAAStatus":
-                case "Custom":
-                    useCaseContainer.style.display = "block";
-                    useCaseInput.required = true;
-                    break;
-                default:
-                    useCaseInput.value = null;
-                    useCaseInput.required = false;
-                    useCaseContainer.style.display = "none";
+            const show = ["EAA", "EAAStatus", "Custom"].includes(verificationContext.value);
+            useCaseContainer.classList.toggle("is-visible", show);
+            useCaseInput.required = show;
+            if (!show) {
+                useCaseInput.value = "";
             }
         }
 
@@ -207,6 +207,9 @@
 
         form.addEventListener("submit", setLoadingState);
         verificationContext.addEventListener("change", toggleUseCase);
+        resetFormButton.addEventListener("click", function () {
+            window.location.href = window.location.href;
+        });
 
         toggleUseCase();
     })();

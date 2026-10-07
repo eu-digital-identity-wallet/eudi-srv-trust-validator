@@ -67,7 +67,7 @@ internal class TrustValidatorUi(
             .renderAndAwait(
                 "trust-validator-certificate-check-form",
                 mapOf(
-                    "verificationContexts" to
+                    "contextGroups" to
                         VerificationContextTO.entries
                             .filterNot { context ->
                                 context in
@@ -76,7 +76,7 @@ internal class TrustValidatorUi(
                                         VerificationContextTO.WalletUnitAttestation,
                                         VerificationContextTO.WalletInstanceAttestation,
                                     )
-                            }.map { it.name },
+                            }.asContextGroups(),
                 ),
             )
     }
@@ -143,7 +143,7 @@ private class IsChainTrustedUseCaseWebUiAdapter(
                 mapOf(
                     "selectedContext" to formData.getFirst("verificationContext"),
                     "useCase" to (formData.getFirst("useCase") ?: ""),
-                    "verificationContexts" to VerificationContextTO.entries.map { it.name },
+                    "contextGroups" to VerificationContextTO.entries.asContextGroups(),
                     "success" to false,
                     "messageKey" to "trust.validator.result.error.invalidInput",
                     "messageArgs" to (message ?: javaClass.simpleName),
@@ -165,7 +165,7 @@ private class IsChainTrustedUseCaseWebUiAdapter(
                     "chain" to formData.getFirst("chain"),
                     "selectedContext" to formData.getFirst("verificationContext"),
                     "useCase" to (formData.getFirst("useCase") ?: ""),
-                    "verificationContexts" to VerificationContextTO.entries.map { it.name },
+                    "contextGroups" to VerificationContextTO.entries.asContextGroups(),
                     "success" to false,
                     "messageKey" to "trust.validator.result.error.fromService",
                     "messageArgs" to description,
@@ -179,7 +179,7 @@ private class IsChainTrustedUseCaseWebUiAdapter(
                 put("chain", formData.getFirst("chain"))
                 put("selectedContext", formData.getFirst("verificationContext"))
                 put("useCase", formData.getFirst("useCase"))
-                put("verificationContexts", VerificationContextTO.entries.map { it.name })
+                put("contextGroups", VerificationContextTO.entries.asContextGroups())
                 put("success", trusted)
 
                 if (trusted) {
@@ -199,4 +199,34 @@ private class IsChainTrustedUseCaseWebUiAdapter(
             .contentType(MediaType.TEXT_HTML)
             .renderAndAwait("trust-validator-certificate-check-form", model)
     }
+}
+
+@Suppress("DEPRECATION")
+private fun List<VerificationContextTO>.asContextGroups(): List<Pair<String, List<String>>> {
+    val groupNames: Map<VerificationContextTO, String> =
+        mapOf(
+            VerificationContextTO.WalletProviderAttestation to "Wallet",
+            VerificationContextTO.WalletOrKeyStorageStatus to "Wallet",
+            VerificationContextTO.WalletInstanceAttestation to "Wallet",
+            VerificationContextTO.WalletUnitAttestation to "Wallet",
+            VerificationContextTO.WalletUnitAttestationStatus to "Wallet",
+            VerificationContextTO.PID to "PID",
+            VerificationContextTO.PIDStatus to "PID",
+            VerificationContextTO.PubEAA to "PubEAA",
+            VerificationContextTO.PubEAAStatus to "PubEAA",
+            VerificationContextTO.QEAA to "QEAA",
+            VerificationContextTO.QEAAStatus to "QEAA",
+            VerificationContextTO.EAA to "EAA",
+            VerificationContextTO.EAAStatus to "EAA",
+            VerificationContextTO.WalletRelyingPartyRegistrationCertificate to "Wallet Relying Party",
+            VerificationContextTO.WalletRelyingPartyRegistrationCertificateStatus to "Wallet Relying Party",
+            VerificationContextTO.WalletRelyingPartyAccessCertificate to "Wallet Relying Party",
+            VerificationContextTO.Custom to "Custom",
+        )
+    val grouped = LinkedHashMap<String, MutableList<VerificationContextTO>>()
+    for (context in this) {
+        val group = groupNames[context] ?: "Other"
+        grouped.getOrPut(group) { mutableListOf() }.add(context)
+    }
+    return grouped.map { (group, list) -> group to list.map(VerificationContextTO::name) }
 }
