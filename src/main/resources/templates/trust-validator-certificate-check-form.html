@@ -107,10 +107,10 @@
                 </div>
 
                 <div class="tv-actions">
-                    <button type="button" class="btn tv-btn-secondary" id="resetFormButton"
+                    <a type="button" href="/validate" th:href="@{/validate}" class="btn tv-btn-secondary" id="resetFormButton"
                             th:text="#{trust.validator.action.reset}">
                         Reset
-                    </button>
+                    </a>
                     <button type="submit" class="btn tv-btn-primary" id="validateButton">
                         <span id="buttonText" th:text="#{trust.validator.action.validate}">Validate</span>
                         <span id="buttonSpinner" class="spinner-border spinner-border-sm" role="status"
@@ -207,9 +207,6 @@
 
         form.addEventListener("submit", setLoadingState);
         verificationContext.addEventListener("change", toggleUseCase);
-        resetFormButton.addEventListener("click", function () {
-            window.location.href = window.location.href;
-        });
 
         toggleUseCase();
     })();
