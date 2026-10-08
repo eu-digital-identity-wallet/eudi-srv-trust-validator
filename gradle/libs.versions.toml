@@ -8,7 +8,6 @@ spotless = "8.10.3"
 java = "25"
 ktlint = "1.8.0"
 arrow = "2.2.3"
-dependencycheck = "13.0.0"
 swagger-ui = "5.32.15"
 kover = "0.9.11"
 consultation = "0.4.0-alpha.4"
@@ -55,5 +54,4 @@ spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-plugin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 kotlin-plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-dependencycheck = { id = "org.owasp.dependencycheck", version.ref = "dependencycheck" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

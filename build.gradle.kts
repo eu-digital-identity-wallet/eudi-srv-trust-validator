@@ -10,7 +10,6 @@ plugins {
     alias(libs.plugins.spotless)
     alias(libs.plugins.kover)
     alias(libs.plugins.spring.boot)
-    alias(libs.plugins.dependencycheck)
 }
 
 repositories {
@@ -117,14 +116,5 @@ spotless {
 
     kotlinGradle {
         ktlint(ktlintVersion)
-    }
-}
-
-dependencyCheck {
-    formats = mutableListOf("XML", "HTML")
-    nvd {
-        apiKey = System.getenv("NVD_API_KEY") ?: findProperty("nvdApiKey")?.toString() ?: ""
-        delay = 10000
-        maxRetryCount = 2
     }
 }
