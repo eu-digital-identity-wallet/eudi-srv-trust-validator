@@ -306,7 +306,7 @@ body {
     color: var(--tv-danger);
     font-family: "SFMono-Regular", Consolas, Menlo, monospace;
     font-size: 0.82rem;
-    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* Trust anchor */
@@ -327,7 +327,7 @@ body {
 .tv-anchor-value {
     font-family: "SFMono-Regular", Consolas, Menlo, monospace;
     font-size: 0.82rem;
-    word-break: break-word;
+    overflow-wrap: break-word;
     background: #fff;
     border: 1px solid var(--tv-border);
     border-radius: var(--tv-radius-sm);
