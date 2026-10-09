@@ -34,6 +34,9 @@ consultation-lote = { module = "eu.europa.ec.eudi:etsi-119602-consultation", ver
 dss-tsl-validation = { module = "eu.europa.ec.joinup.sd-dss:dss-tsl-validation" }
 dss-policy-jaxb = { module = "eu.europa.ec.joinup.sd-dss:dss-policy-jaxb" }
 dss-utils-google-guava = { module = "eu.europa.ec.joinup.sd-dss:dss-utils-google-guava" }
+dss-lote-validation-json = { module = "eu.europa.ec.joinup.sd-dss:dss-lote-validation-json" }
+dss-jades = { module = "eu.europa.ec.joinup.sd-dss:dss-jades" }
+dss-validation = { module = "eu.europa.ec.joinup.sd-dss:dss-validation" }
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
 spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
 spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
