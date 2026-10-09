@@ -41,8 +41,8 @@ import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
 import kotlin.time.Clock
 import kotlin.time.Duration
-import kotlinx.io.files.Path as KotlinXPath
 import java.nio.file.Path as JavaPath
+import kotlinx.io.files.Path as KotlinXPath
 
 private val log = LoggerFactory.getLogger("getTrustAnchorsUsingLoTE")
 
@@ -63,32 +63,30 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
 ): ComposeChainTrust<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     loteSources()?.let { (locations, services) ->
         val verifyJwtSignature = loteSignatureVerifierOf(signatureVerification)
-            log.info(locations)
+        log.info(locations)
 
-            val provisionTrustAnchorsFromLOTE =
-                ProvisionTrustAnchorsFromLoTEs.eudiwJvm(
-                    loadLoTEAndPointers =
-                        LoadLoTEAndPointers(
-                            constraints,
-                            verifyJwtSignature = verifyJwtSignature,
-                            LoadSingleLoTEWithFileCache(
-                                cacheDirectory = KotlinXPath(cacheDirectory.toString()),
-                                downloadSingleLoTE = DownloadSingleLoTE(httpClient),
-                                fileCacheExpiration = fileCacheExpiration,
-                                clock = clock,
-                            ),
+        val provisionTrustAnchorsFromLOTE =
+            ProvisionTrustAnchorsFromLoTEs.eudiwJvm(
+                loadLoTEAndPointers =
+                    LoadLoTEAndPointers(
+                        constraints,
+                        verifyJwtSignature = verifyJwtSignature,
+                        LoadSingleLoTEWithFileCache(
+                            cacheDirectory = KotlinXPath(cacheDirectory.toString()),
+                            downloadSingleLoTE = DownloadSingleLoTE(httpClient),
+                            fileCacheExpiration = fileCacheExpiration,
+                            clock = clock,
                         ),
-                    svcTypePerCtx = services,
-                    continueOnProblem = continueOnProblem,
-                    pkix = validateCertificateChainUsingPKIX,
-                )
+                    ),
+                svcTypePerCtx = services,
+                continueOnProblem = continueOnProblem,
+                pkix = validateCertificateChainUsingPKIX,
+            )
 
-            provisionTrustAnchorsFromLOTE.cached(scope, locations, ttl = inMemoryCacheExpiration)
-        }
+        provisionTrustAnchorsFromLOTE.cached(scope, locations, ttl = inMemoryCacheExpiration)
+    }
 
-private fun loteSignatureVerifierOf(
-    signatureVerificationKeyStore: KeyStoreConfigurationProperties,
-): VerifyJwtSignature =
+private fun loteSignatureVerifierOf(signatureVerificationKeyStore: KeyStoreConfigurationProperties): VerifyJwtSignature =
     signatureVerificationKeyStore.let { ks ->
         val certificateSource: CertificateSource =
             ks.location.inputStream.use {
@@ -96,35 +94,38 @@ private fun loteSignatureVerifierOf(
             }
         VerifyJwtSignature { jwt -> verifyLoTEJwtSignature(jwt, certificateSource) }
     }
+
 private suspend fun verifyLoTEJwtSignature(
     jwt: String,
     certificateSource: CertificateSource,
 ): VerifyJwtSignature.Outcome =
     withContext(Dispatchers.IO) {
-            val trustedCertificateSource = CommonTrustedCertificateSource().apply { importAsTrusted(certificateSource) }
-            val certificateVerifier = CommonCertificateVerifier(true).apply {
+        val trustedCertificateSource = CommonTrustedCertificateSource().apply { importAsTrusted(certificateSource) }
+        val certificateVerifier =
+            CommonCertificateVerifier(true).apply {
                 setTrustedCertSources(trustedCertificateSource)
             }
 
-            val validator = JWSCompactDocumentValidator(InMemoryDocument(jwt.toByteArray())).apply {
+        val validator =
+            JWSCompactDocumentValidator(InMemoryDocument(jwt.toByteArray())).apply {
                 setCertificateVerifier(certificateVerifier)
                 setValidationLevel(ValidationLevel.BASIC_SIGNATURES)
                 setValidationContextExecutor(CompleteValidationContextExecutor.INSTANCE)
             }
 
-            val simpleReport = validator.validateDocument().simpleReport
-            val signatureId = simpleReport.firstSignatureId
-            val indication = simpleReport.getIndication(signatureId)
-            if (indication == Indication.TOTAL_PASSED) {
-                VerifyJwtSignature.Outcome.Verified(jwt)
-            } else {
-                VerifyJwtSignature.Outcome.NotVerified(
-                    IllegalStateException(
-                        "LoTE JWS signature verification failed: indication=$indication, " +
-                            "subIndication=${simpleReport.getSubIndication(signatureId)}",
-                    ),
-                )
-            }
+        val simpleReport = validator.validateDocument().simpleReport
+        val signatureId = simpleReport.firstSignatureId
+        val indication = simpleReport.getIndication(signatureId)
+        if (indication == Indication.TOTAL_PASSED) {
+            VerifyJwtSignature.Outcome.Verified(jwt)
+        } else {
+            VerifyJwtSignature.Outcome.NotVerified(
+                IllegalStateException(
+                    "LoTE JWS signature verification failed: indication=$indication, " +
+                        "subIndication=${simpleReport.getSubIndication(signatureId)}",
+                ),
+            )
+        }
     }
 
 private fun TrustSourcesConfigurationProperties.loteSources(): Pair<LoteLocations, LoteServices>? {

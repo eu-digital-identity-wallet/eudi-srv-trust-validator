@@ -46,7 +46,6 @@ dependencies {
     implementation(libs.dss.jades)
     implementation(libs.dss.validation)
 
-
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.thymeleaf)
