@@ -59,27 +59,18 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
     continueOnProblem: ContinueOnProblem = ContinueOnProblem.Never,
     constraints: LoadLoTEAndPointers.Constraints,
     validateCertificateChainUsingPKIX: ValidateCertificateChainUsingPKIX<List<X509Certificate>, TrustAnchor>,
-    signatureVerification: KeyStoreConfigurationProperties?,
+    signatureVerification: KeyStoreConfigurationProperties,
 ): ComposeChainTrust<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     loteSources()?.let { (locations, services) ->
-        signatureVerification?.let { keystore ->
+        val verifyJwtSignature = loteSignatureVerifierOf(signatureVerification)
             log.info(locations)
-
-            val certificateSource: CertificateSource =
-                keystore.location.inputStream.use {
-                    KeyStoreCertificateSource(
-                        it,
-                        keystore.keyStoreType,
-                        (keystore.password?.value ?: "").toCharArray(),
-                    )
-                }
 
             val provisionTrustAnchorsFromLOTE =
                 ProvisionTrustAnchorsFromLoTEs.eudiwJvm(
                     loadLoTEAndPointers =
                         LoadLoTEAndPointers(
                             constraints,
-                            verifyJwtSignature = { verifyLoTEJwtSignature(it, certificateSource) },
+                            verifyJwtSignature = verifyJwtSignature,
                             LoadSingleLoTEWithFileCache(
                                 cacheDirectory = KotlinXPath(cacheDirectory.toString()),
                                 downloadSingleLoTE = DownloadSingleLoTE(httpClient),
@@ -94,9 +85,18 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
 
             provisionTrustAnchorsFromLOTE.cached(scope, locations, ttl = inMemoryCacheExpiration)
         }
-    }
 
-internal suspend fun verifyLoTEJwtSignature(
+private fun loteSignatureVerifierOf(
+    signatureVerificationKeyStore: KeyStoreConfigurationProperties,
+): VerifyJwtSignature =
+    signatureVerificationKeyStore.let { ks ->
+        val certificateSource: CertificateSource =
+            ks.location.inputStream.use {
+                KeyStoreCertificateSource(it, ks.keyStoreType, (ks.password?.value ?: "").toCharArray())
+            }
+        VerifyJwtSignature { jwt -> verifyLoTEJwtSignature(jwt, certificateSource) }
+    }
+private suspend fun verifyLoTEJwtSignature(
     jwt: String,
     certificateSource: CertificateSource,
 ): VerifyJwtSignature.Outcome =
