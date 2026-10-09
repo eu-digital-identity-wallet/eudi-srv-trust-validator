@@ -40,6 +40,7 @@ data class TrustValidatorConfigurationProperties(
     data class LoTEConfigurationProperties(
         val fileCache: FileCacheConfigurationProperties,
         val inMemoryCache: InMemoryCacheConfigurationProperties,
+        val signatureVerification: KeyStoreConfigurationProperties,
     )
 }
 

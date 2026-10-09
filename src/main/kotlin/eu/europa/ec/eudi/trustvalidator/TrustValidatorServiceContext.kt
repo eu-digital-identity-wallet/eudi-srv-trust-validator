@@ -123,6 +123,7 @@ internal class TrustValidatorServiceContext :
                         maxLists = 50,
                     ),
                 validateCertificateChainUsingPKIX = ValidateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
+                signatureVerification = config.lote.signatureVerification,
             ) ?: IsChainTrustedForContextF.empty()
         }
 
