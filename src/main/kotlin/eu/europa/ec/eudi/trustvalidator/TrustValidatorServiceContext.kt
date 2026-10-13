@@ -19,6 +19,7 @@ import arrow.core.NonEmptyList
 import arrow.core.toNonEmptyListOrNull
 import eu.europa.ec.eudi.etsi119602.consultation.ContinueOnProblem
 import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTEAndPointers
+import eu.europa.ec.eudi.etsi119602.consultation.VerifyJwtSignature
 import eu.europa.ec.eudi.etsi1196x2.consultation.DisposableContainer
 import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContextF
 import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
@@ -26,6 +27,7 @@ import eu.europa.ec.eudi.trustvalidator.adapter.input.web.SwaggerUi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustApi
 import eu.europa.ec.eudi.trustvalidator.adapter.input.web.TrustValidatorUi
 import eu.europa.ec.eudi.trustvalidator.adapter.out.consultation.empty
+import eu.europa.ec.eudi.trustvalidator.adapter.out.jades.VerifyJwtSignatureUsingJAdESBB
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.dss.CleanupDSSCache
 import eu.europa.ec.eudi.trustvalidator.adapter.out.scheduling.lote.CleanupLoTECache
 import eu.europa.ec.eudi.trustvalidator.adapter.out.trust.IsChainTrusted
@@ -104,26 +106,40 @@ internal class TrustValidatorServiceContext :
 
         registerBean(name = "is-chain-trusted-using-lote", infrastructure = true, autowirable = false) {
             val config = bean<TrustValidatorConfigurationProperties>()
-            config.trustSources?.isChainTrustedForContextUsingLoTE(
-                scope = bean(),
-                cacheDirectory = config.lote.fileCache.location,
-                fileCacheExpiration =
-                    config.lote.fileCache.expiration
-                        .toKotlinDuration(),
-                inMemoryCacheExpiration =
-                    config.lote.inMemoryCache.expiration
-                        .toKotlinDuration(),
-                httpClient = bean(),
-                clock = bean(),
-                continueOnProblem = ContinueOnProblem.Never,
-                constraints =
-                    LoadLoTEAndPointers.Constraints.LoadOtherPointers(
-                        otherLoTEParallelism = 2,
-                        maxDepth = 1,
-                        maxLists = 50,
-                    ),
-                validateCertificateChainUsingPKIX = ValidateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
-            ) ?: IsChainTrustedForContextF.empty()
+            config.trustSources?.let { trustSources ->
+                val verifyJwtSignature: VerifyJwtSignature =
+                    if (config.lote.verifySignature) {
+                        runBlocking {
+                            VerifyJwtSignatureUsingJAdESBB(
+                                checkNotNull(config.lote.signatureVerification),
+                                bean(),
+                            )
+                        }
+                    } else {
+                        VerifyJwtSignature { jwt -> VerifyJwtSignature.Outcome.Verified(jwt) }
+                    }
+                trustSources.isChainTrustedForContextUsingLoTE(
+                    scope = bean(),
+                    cacheDirectory = config.lote.fileCache.location,
+                    fileCacheExpiration =
+                        config.lote.fileCache.expiration
+                            .toKotlinDuration(),
+                    inMemoryCacheExpiration =
+                        config.lote.inMemoryCache.expiration
+                            .toKotlinDuration(),
+                    httpClient = bean(),
+                    clock = bean(),
+                    continueOnProblem = ContinueOnProblem.Never,
+                    constraints =
+                        LoadLoTEAndPointers.Constraints.LoadOtherPointers(
+                            otherLoTEParallelism = 2,
+                            maxDepth = 1,
+                            maxLists = 50,
+                        ),
+                    validateCertificateChainUsingPKIX = ValidateCertificateChainUsingPKIX(config.enableCertificateRevocationCheck),
+                    verifyJwtSignature = verifyJwtSignature,
+                )
+            } ?: IsChainTrustedForContextF.empty()
         }
 
         registerBean {

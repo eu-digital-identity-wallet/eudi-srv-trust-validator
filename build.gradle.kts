@@ -42,6 +42,8 @@ dependencies {
     implementation(libs.dss.policy.jaxb)
     implementation(libs.dss.utils.google.guava)
     implementation(libs.consultation.lote)
+    implementation(libs.dss.jades)
+    implementation(libs.dss.validation)
 
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.spring.boot.starter.security)
@@ -78,6 +80,14 @@ kotlin {
             )
         }
     }
+}
+
+tasks.bootJar {
+    exclude("lotl.jks", "lote.jks")
+}
+
+tasks.jar {
+    exclude("lotl.jks", "lote.jks")
 }
 
 tasks.test {

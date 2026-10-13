@@ -40,7 +40,15 @@ data class TrustValidatorConfigurationProperties(
     data class LoTEConfigurationProperties(
         val fileCache: FileCacheConfigurationProperties,
         val inMemoryCache: InMemoryCacheConfigurationProperties,
-    )
+        val signatureVerification: KeyStoreConfigurationProperties?,
+        val verifySignature: Boolean = true,
+    ) {
+        init {
+            require(!verifySignature || signatureVerification != null) {
+                "lote.signature-verification keystore is required when lote.verify-signature is enabled"
+            }
+        }
+    }
 }
 
 data class FileCacheConfigurationProperties(

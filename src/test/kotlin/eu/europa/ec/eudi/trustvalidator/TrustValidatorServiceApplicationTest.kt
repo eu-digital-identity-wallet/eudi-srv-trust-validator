@@ -27,6 +27,9 @@ import kotlin.test.assertTrue
     properties = [
         "trust-validator.dss.file-cache.location=dss-cache",
         "trust-validator.lote.file-cache.location=lote-cache",
+        "trust-validator.lote.signature-verification.location=classpath:lote.jks",
+        "trust-validator.lote.signature-verification.key-store-type=JKS",
+        "trust-validator.lote.signature-verification.password=",
     ],
 )
 class TrustValidatorServiceApplicationTest {

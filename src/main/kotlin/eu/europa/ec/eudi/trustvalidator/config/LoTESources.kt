@@ -48,15 +48,17 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
     continueOnProblem: ContinueOnProblem = ContinueOnProblem.Never,
     constraints: LoadLoTEAndPointers.Constraints,
     validateCertificateChainUsingPKIX: ValidateCertificateChainUsingPKIX<List<X509Certificate>, TrustAnchor>,
+    verifyJwtSignature: VerifyJwtSignature,
 ): ComposeChainTrust<NonEmptyList<X509Certificate>, VerificationContext, TrustAnchor>? =
     loteSources()?.let { (locations, services) ->
         log.info(locations)
+
         val provisionTrustAnchorsFromLOTE =
             ProvisionTrustAnchorsFromLoTEs.eudiwJvm(
                 loadLoTEAndPointers =
                     LoadLoTEAndPointers(
                         constraints,
-                        verifyJwtSignature = { VerifyJwtSignature.Outcome.Verified(it) },
+                        verifyJwtSignature = verifyJwtSignature,
                         LoadSingleLoTEWithFileCache(
                             cacheDirectory = KotlinXPath(cacheDirectory.toString()),
                             downloadSingleLoTE = DownloadSingleLoTE(httpClient),
