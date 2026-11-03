@@ -52,22 +52,31 @@ fun TrustSourcesConfigurationProperties.isChainTrustedForContextUsingLoTE(
     loteSources()?.let { (locations, services) ->
         log.info(locations)
         val provisionTrustAnchorsFromLOTE =
-            ProvisionTrustAnchorsFromLoTEs.eudiwJvm(
-                loadLoTEAndPointers =
-                    LoadLoTEAndPointers(
-                        constraints,
-                        verifyJwtSignature = { VerifyJwtSignature.Outcome.Verified(it) },
-                        LoadSingleLoTEWithFileCache(
-                            cacheDirectory = KotlinXPath(cacheDirectory.toString()),
-                            downloadSingleLoTE = DownloadSingleLoTE(httpClient),
-                            fileCacheExpiration = fileCacheExpiration,
+            run {
+                val loadLoTE =
+                    LoadSingleLoTEWithFileCache(
+                        cacheDirectory = KotlinXPath(cacheDirectory.toString()),
+                        downloadSingleLoTE = DownloadSingleLoTE(httpClient),
+                        fileCacheExpiration = fileCacheExpiration,
+                        clock = clock,
+                    )
+
+                ProvisionTrustAnchorsFromLoTEs.eudiwJvm(
+                    loadLoTEAndPointers =
+                        LoadLoTEAndPointers(
+                            constraints = constraints,
+                            verifyJwtSignature = { VerifyJwtSignature.Outcome.Verified(it) },
+                            loadLoTE = loadLoTE,
                             clock = clock,
+                            parseJwt = ParseJwt(),
+                            loTEEventListener = loadLoTE,
+                            loTEFallbackProvider = loadLoTE,
                         ),
-                    ),
-                svcTypePerCtx = services,
-                continueOnProblem = continueOnProblem,
-                pkix = validateCertificateChainUsingPKIX,
-            )
+                    svcTypePerCtx = services,
+                    continueOnProblem = continueOnProblem,
+                    pkix = validateCertificateChainUsingPKIX,
+                )
+            }
 
         provisionTrustAnchorsFromLOTE.cached(scope, locations, ttl = inMemoryCacheExpiration)
     }
