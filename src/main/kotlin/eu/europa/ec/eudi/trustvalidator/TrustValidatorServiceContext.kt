@@ -202,31 +202,10 @@ internal class TrustValidatorServiceContext :
                         CorsConfigurationSource {
                             CorsConfiguration()
                                 .apply {
-                                    allowedOrigins = null
-                                    allowedOriginPatterns = listOf(CorsConfiguration.ALL)
-                                    allowedMethods = listOf(HttpMethod.GET.name(), HttpMethod.POST.name(), HttpMethod.OPTIONS.name())
-
-                                    allowedHeaders =
-                                        listOf(
-                                            HttpHeaders.ACCEPT,
-                                            HttpHeaders.ACCEPT_LANGUAGE,
-                                            HttpHeaders.CONTENT_LANGUAGE,
-                                            HttpHeaders.RANGE,
-                                            HttpHeaders.CONTENT_TYPE,
-                                        )
-                                    exposedHeaders =
-                                        listOf(
-                                            HttpHeaders.CACHE_CONTROL,
-                                            HttpHeaders.CONTENT_TYPE,
-                                            HttpHeaders.CONTENT_LOCATION,
-                                            HttpHeaders.EXPIRES,
-                                            HttpHeaders.LAST_MODIFIED,
-                                            HttpHeaders.PRAGMA,
-                                        )
+                                    applyPermitDefaultValues()
 
                                     allowCredentials = false
                                     allowPrivateNetwork = false
-                                    setMaxAge(1.hours.toJavaDuration())
                                 }
                         }
                 }
