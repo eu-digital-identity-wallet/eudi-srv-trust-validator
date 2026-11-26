@@ -204,51 +204,18 @@ internal class TrustValidatorServiceContext :
                                 .apply {
                                     allowedOrigins = null
                                     allowedOriginPatterns = listOf(CorsConfiguration.ALL)
-                                    allowedMethods = HttpMethod.values().map { it.name() }
+                                    allowedMethods = listOf(HttpMethod.GET.name(), HttpMethod.POST.name())
 
                                     allowedHeaders =
                                         listOf(
                                             HttpHeaders.ACCEPT,
-                                            HttpHeaders.ACCEPT_CHARSET,
-                                            HttpHeaders.ACCEPT_ENCODING,
                                             HttpHeaders.ACCEPT_LANGUAGE,
-                                            HttpHeaders.CONTENT_ENCODING,
                                             HttpHeaders.CONTENT_LANGUAGE,
-                                            HttpHeaders.CONTENT_LENGTH,
-                                            HttpHeaders.CONTENT_LOCATION,
-                                            HttpHeaders.CONTENT_RANGE,
                                             HttpHeaders.CONTENT_TYPE,
-                                            HttpHeaders.CONNECTION,
-                                            HttpHeaders.AUTHORIZATION,
-                                            HttpHeaders.ORIGIN,
-                                            HttpHeaders.USER_AGENT,
                                         )
                                     exposedHeaders =
                                         listOf(
-                                            HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS,
-                                            HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
-                                            HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS,
-                                            HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
-                                            HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
-                                            HttpHeaders.ACCESS_CONTROL_MAX_AGE,
-                                            HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS,
-                                            HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD,
-                                            HttpHeaders.CONTENT_DISPOSITION,
-                                            HttpHeaders.CONTENT_ENCODING,
-                                            HttpHeaders.CONTENT_LANGUAGE,
-                                            HttpHeaders.CONTENT_LENGTH,
-                                            HttpHeaders.CONTENT_LOCATION,
-                                            HttpHeaders.CONTENT_RANGE,
                                             HttpHeaders.CONTENT_TYPE,
-                                            HttpHeaders.LINK,
-                                            HttpHeaders.LOCATION,
-                                            HttpHeaders.CONNECTION,
-                                            HttpHeaders.UPGRADE,
-                                            HttpHeaders.CACHE_CONTROL,
-                                            HttpHeaders.EXPIRES,
-                                            HttpHeaders.PRAGMA,
-                                            HttpHeaders.WWW_AUTHENTICATE,
-                                            HttpHeaders.SERVER,
                                         )
 
                                     allowCredentials = false
