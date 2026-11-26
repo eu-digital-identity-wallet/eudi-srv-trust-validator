@@ -204,18 +204,24 @@ internal class TrustValidatorServiceContext :
                                 .apply {
                                     allowedOrigins = null
                                     allowedOriginPatterns = listOf(CorsConfiguration.ALL)
-                                    allowedMethods = listOf(HttpMethod.GET.name(), HttpMethod.POST.name())
+                                    allowedMethods = listOf(HttpMethod.GET.name(), HttpMethod.POST.name(), HttpMethod.OPTIONS.name())
 
                                     allowedHeaders =
                                         listOf(
                                             HttpHeaders.ACCEPT,
                                             HttpHeaders.ACCEPT_LANGUAGE,
                                             HttpHeaders.CONTENT_LANGUAGE,
+                                            HttpHeaders.RANGE,
                                             HttpHeaders.CONTENT_TYPE,
                                         )
                                     exposedHeaders =
                                         listOf(
+                                            HttpHeaders.CACHE_CONTROL,
                                             HttpHeaders.CONTENT_TYPE,
+                                            HttpHeaders.CONTENT_LOCATION,
+                                            HttpHeaders.EXPIRES,
+                                            HttpHeaders.LAST_MODIFIED,
+                                            HttpHeaders.PRAGMA,
                                         )
 
                                     allowCredentials = false
