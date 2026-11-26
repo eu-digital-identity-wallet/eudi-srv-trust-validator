@@ -42,6 +42,8 @@ import org.springframework.beans.factory.DisposableBean
 import org.springframework.boot.http.codec.CodecCustomizer
 import org.springframework.core.env.Environment
 import org.springframework.core.env.getProperty
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.http.codec.json.KotlinSerializationJsonDecoder
 import org.springframework.http.codec.json.KotlinSerializationJsonEncoder
 import org.springframework.security.config.web.server.ServerHttpSecurity
@@ -52,6 +54,8 @@ import java.security.cert.TrustAnchor
 import java.security.cert.X509Certificate
 import java.util.concurrent.Executors
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.toJavaDuration
 import kotlin.time.toKotlinDuration
 
 internal class TrustValidatorServiceContext :
@@ -194,24 +198,15 @@ internal class TrustValidatorServiceContext :
             val http = bean<ServerHttpSecurity>()
             http {
                 cors {
-                    // cross-origin resource sharing configuration
                     configurationSource =
                         CorsConfigurationSource {
-                            CorsConfiguration().apply {
-                                fun getOptionalList(name: String): NonEmptyList<String>? =
-                                    env.getOptionalList(name = name, filter = { it.isNotBlank() }, transform = { it.trim() })
+                            CorsConfiguration()
+                                .apply {
+                                    applyPermitDefaultValues()
 
-                                allowedOrigins = getOptionalList("cors.origins")
-                                allowedOriginPatterns = getOptionalList("cors.originPatterns")
-                                allowedMethods = getOptionalList("cors.methods")
-                                run {
-                                    val headers = getOptionalList("cors.headers")
-                                    allowedHeaders = headers
-                                    exposedHeaders = headers
+                                    allowCredentials = false
+                                    allowPrivateNetwork = false
                                 }
-                                allowCredentials = env.getProperty<Boolean>("cors.credentials")
-                                maxAge = env.getProperty<Long>("cors.maxAge")
-                            }
                         }
                 }
                 csrf { disable() } // cross-site request forgery disabled

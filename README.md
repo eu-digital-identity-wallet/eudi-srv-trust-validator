@@ -69,30 +69,6 @@ Variable: `SERVER_PORT`
 Description: Port for the HTTP listener of the Verifier Endpoint application  
 Default value: `8080`
 
-Variable: `CORS_ORIGINS`  
-Description: Comma separated list of allowed Origins for cross-origin requests  
-Default value: `*`
-
-Variable: `CORS_ORIGINPATTERNS`  
-Description: Comma separated list of patterns used for more fine grained matching of allowed Origins for cross-origin requests  
-Default value: `*`
-
-Variable: `CORS_METHODS`  
-Description: Comma separated list of HTTP methods allowed for cross-origin requests  
-Default value: `*`
-
-Variable: `CORS_HEADERS`  
-Description: Comma separated list of allowed and exposed HTTP Headers for cross-origin requests  
-Default value: `*`
-
-Variable: `CORS_CREDENTIALS`  
-Description: Whether credentials (i.e. Cookies or Authorization Header) are allowed for cross-origin requests
-Default value: `false`
-
-Variable: `CORS_MAXAGE`  
-Description: Time in seconds of how long pre-flight request responses can be cached by clients  
-Default value: `3600`
-
 ### Certificate Revocation Checking
 
 Variable: `TRUST_VALIDATOR_ENABLE_CERTIFICATE_REVOCATION_CHECK`  
